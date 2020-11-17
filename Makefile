@@ -5,7 +5,7 @@ EXTRA_CFLAGS += -Wno-vla
 #EXTRA_CFLAGS += -Wno-unused-value
 #EXTRA_CFLAGS += -Wno-unused-label
 #EXTRA_CFLAGS += -Wno-unused-parameter
-#EXTRA_CFLAGS += -Wno-unused-function
+EXTRA_CFLAGS += -Wno-unused-function
 #EXTRA_CFLAGS += -Wno-unused
 #EXTRA_CFLAGS += -Wno-uninitialized
 
@@ -186,14 +186,14 @@ HCI_NAME = usb
 endif
 
 ifeq ($(CONFIG_RTL8812A)_$(CONFIG_RTL8821A)_$(CONFIG_RTL8814A), y_y_y)
-
-EXTRA_CFLAGS += -DDRV_NAME=\"88XXau\"
+USER_DRV_NAME ?= 88XXau
 ifeq ($(CONFIG_USB_HCI), y)
-USER_MODULE_NAME = 88XXau
+USER_MODULE_NAME ?= 88XXau
 endif
 else
-EXTRA_CFLAGS += -DDRV_NAME=\"rtl8812au\"
+USER_DRV_NAME ?= rtl8812au
 endif
+EXTRA_CFLAGS += -DDRV_NAME=\"$(USER_DRV_NAME)\"
 
 _OS_INTFS_FILES :=	os_dep/osdep_service.o \
 			os_dep/linux/os_intfs.o \
@@ -1166,16 +1166,16 @@ endif
 
 ifeq ($(CONFIG_MP_VHT_HW_TX_MODE), y)
 EXTRA_CFLAGS += -DCONFIG_MP_VHT_HW_TX_MODE
-ifeq ($(CONFIG_PLATFORM_I386_PC), y)
-## For I386 X86 ToolChain use Hardware FLOATING
-EXTRA_CFLAGS += -mhard-float
-EXTRA_CFLAGS += -DMARK_KERNEL_PFU
-else
-## For ARM ToolChain use Hardware FLOATING
-# Raspbian kernel is with soft-float.
-# 'softfp' allows FP instructions, but no FP on function call interfaces
-EXTRA_CFLAGS += -mfloat-abi=softfp
-endif
+# ifeq ($(CONFIG_PLATFORM_I386_PC), y)
+# ## For I386 X86 ToolChain use Hardware FLOATING
+# EXTRA_CFLAGS += -mhard-float
+# EXTRA_CFLAGS += -DMARK_KERNEL_PFU
+# else
+# ## For ARM ToolChain use Hardware FLOATING
+# # Raspbian kernel is with soft-float.
+# # 'softfp' allows FP instructions, but no FP on function call interfaces
+# EXTRA_CFLAGS += -mfloat-abi=softfp
+# endif
 endif
 
 ifeq ($(CONFIG_APPEND_VENDOR_IE_ENABLE), y)
