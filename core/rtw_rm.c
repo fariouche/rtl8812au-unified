@@ -847,7 +847,7 @@ int rm_recv_link_mens_req(_adapter *padapter,
 
 	RTW_INFO("RM: rmid=%x, bssid" MAC_FMT " rx_pwr=%ddBm, rate=%s\n",
 		prm->rmid, MAC_ARG(prm->psta->cmn.mac_addr), prm->q.rx_pwr,
-		get_rate_name(prm->q.rx_rate));
+		MGN_RATE_STR(prm->q.rx_rate));
 
 #if (RM_MORE_DBG_MSG)
 	RTW_INFO("RM: tx_pwr_used =%d dBm\n", prm->q.tx_pwr_used);
@@ -1866,7 +1866,7 @@ int retrieve_radio_meas_result(struct rm_obj *prm)
 		/* IPI 0~10 */
 		for (i=0;i<11;i++)
 			prm->p.ipi[i] = hal_data->acs.nhm[ch][i];
-		
+
 #else
 		val8 = 0;
 		prm->p.anpi = val8;

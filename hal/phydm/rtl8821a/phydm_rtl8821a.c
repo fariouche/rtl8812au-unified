@@ -21,38 +21,27 @@
 
 #include "../phydm_precomp.h"
 
-#if (RTL8821A_SUPPORT == 1)
+#if (RTL8821A_SUPPORT == 1) || (RTL8881A_SUPPORT == 1)
+
 s8 phydm_cck_rssi_8821a(struct dm_struct *dm, u16 lna_idx, u8 vga_idx)
 {
 	s8 rx_pwr_all = 0;
 
 	switch (lna_idx) {
-	case 7:
-		if (vga_idx <= 27)
-			rx_pwr_all = -94 + 2 * (27 - vga_idx);
-		else
-			rx_pwr_all = -94;
-		break;
-	case 6:
-		rx_pwr_all = -42 + 2 * (2 - vga_idx);
-		break;
 	case 5:
-		rx_pwr_all = -36 + 2 * (7 - vga_idx);
+		rx_pwr_all = -38 - (2 * vga_idx);
 		break;
 	case 4:
-		rx_pwr_all = -30 + 2 * (7 - vga_idx);
-		break;
-	case 3:
-		rx_pwr_all = -18 + 2 * (7 - vga_idx);
+		rx_pwr_all = -30 - (2 * vga_idx);
 		break;
 	case 2:
-		rx_pwr_all = 2 * (5 - vga_idx);
+		rx_pwr_all = -17 - (2 * vga_idx);
 		break;
 	case 1:
-		rx_pwr_all = 14 - 2 * vga_idx;
+		rx_pwr_all = -1 - (2 * vga_idx);
 		break;
 	case 0:
-		rx_pwr_all = 20 - 2 * vga_idx;
+		rx_pwr_all = 15 - (2 * vga_idx);
 		break;
 	default:
 		break;
@@ -61,37 +50,31 @@ s8 phydm_cck_rssi_8821a(struct dm_struct *dm, u16 lna_idx, u8 vga_idx)
 	return rx_pwr_all;
 }
 
-void
-phydm_set_ext_band_switch_8821A(
-	void		*dm_void,
-	u32		band
-)
+void phydm_set_ext_band_switch_8821A(void *dm_void, u32 band)
 {
-	struct dm_struct		*dm = (struct dm_struct *)dm_void;
+	struct dm_struct *dm = (struct dm_struct *)dm_void;
 
 	/*Output Pin Settings*/
-	odm_set_mac_reg(dm, 0x4C, BIT(23), 0); /*select DPDT_P and DPDT_N as output pin*/
-	odm_set_mac_reg(dm, 0x4C, BIT(24), 1); /*by WLAN control*/
+	odm_set_mac_reg(dm, R_0x4c, BIT(23), 0); /*select DPDT_P and DPDT_N as output pin*/
+	odm_set_mac_reg(dm, R_0x4c, BIT(24), 1); /*by WLAN control*/
 
-	odm_set_bb_reg(dm, 0xCB4, 0xF, 7); /*DPDT_P = 1b'0*/
-	odm_set_bb_reg(dm, 0xCB4, 0xF0, 7); /*DPDT_N = 1b'0*/
+	odm_set_bb_reg(dm, R_0xcb4, 0xF, 7); /*DPDT_P = 1b'0*/
+	odm_set_bb_reg(dm, R_0xcb4, 0xF0, 7); /*DPDT_N = 1b'0*/
 
 	if (band == ODM_BAND_2_4G) {
-		odm_set_bb_reg(dm, 0xCB4, (BIT(29) | BIT(28)), 1);
-		PHYDM_DBG(dm, DBG_ANT_DIV, "***8821A set band switch = 2b'01\n");
+		odm_set_bb_reg(dm, R_0xcb4, (BIT(29) | BIT(28)), 1);
+		PHYDM_DBG(dm, DBG_ANT_DIV,
+			  "***8821A set band switch = 2b'01\n");
 	} else {
-		odm_set_bb_reg(dm, 0xCB4, BIT(29) | BIT(28), 2);
-		PHYDM_DBG(dm, DBG_ANT_DIV, "***8821A set band switch = 2b'10\n");
+		odm_set_bb_reg(dm, R_0xcb4, BIT(29) | BIT(28), 2);
+		PHYDM_DBG(dm, DBG_ANT_DIV,
+			  "***8821A set band switch = 2b'10\n");
 	}
 }
 
-
-void
-odm_dynamic_try_state_agg_8821a(
-	struct dm_struct		*dm
-)
+void odm_dynamic_try_state_agg_8821a(struct dm_struct *dm)
 {
-	if ((dm->support_ic_type & ODM_RTL8821) && (dm->support_interface == ODM_ITRF_USB)) {
+	if ((dm->support_ic_type & ODM_RTL8821) && dm->support_interface == ODM_ITRF_USB) {
 		if (dm->rssi_min > 25)
 			odm_write_1byte(dm, 0x4CF, 0x02);
 		else if (dm->rssi_min < 20)
@@ -99,10 +82,7 @@ odm_dynamic_try_state_agg_8821a(
 	}
 }
 
-void
-odm_dynamic_packet_detection_th_8821a(
-	struct dm_struct		*dm
-)
+void odm_dynamic_packet_detection_th_8821a(struct dm_struct *dm)
 {
 	if (dm->support_ic_type & ODM_RTL8821) {
 		if (dm->rssi_min <= 25) {
@@ -117,13 +97,50 @@ odm_dynamic_packet_detection_th_8821a(
 	}
 }
 
-void
-odm_hw_setting_8821a(
-	struct dm_struct		*dm
-)
+void odm_hw_setting_8821a(struct dm_struct *dm)
 {
 	odm_dynamic_try_state_agg_8821a(dm);
 	odm_dynamic_packet_detection_th_8821a(dm);
 }
+
+#if (DM_ODM_SUPPORT_TYPE == ODM_WIN)
+void odm_dynamic_tx_power_8821(void *dm_void, u8 *desc, u8 macid)
+{
+	struct dm_struct *dm = (struct dm_struct *)dm_void;
+	struct cmn_sta_info *entry = NULL;
+	u8 reg_c56 = 0;
+	u8 txpwr_offset = 0;
+	u8 rssi_tmp = 0;
+
+	if (!is_sta_active(entry))
+		return;
+
+	PHYDM_DBG(dm, DBG_DYN_TXPWR, "[%s]======>\n", __func__);
+
+	entry = dm->phydm_sta_info[macid];
+	rssi_tmp = entry[macid].rssi_stat.rssi;
+
+	if (rssi_tmp > 85) {
+		reg_c56 = odm_read_1byte(dm, 0xc56);
+		PHYDM_DBG(dm, DBG_DYN_TXPWR, "0xc56=0x%x\n", reg_c56);
+		/* @Avoid TXAGC error after TX power offset is applied.
+		For example: Reg0xc56=0x6, if txpwr_offset=3( reduce 11dB )
+		Total power = 6-11= -5( overflow!! ), PA may be burned !
+		so txpwr_offset should be adjusted by Reg0xc56*/
+
+		if (reg_c56 < 14)
+			txpwr_offset = 1;
+		else if (reg_c56 < 22)
+			txpwr_offset = 2;
+		else
+			txpwr_offset = 3;
+	}
+
+	SET_TX_DESC_TX_POWER_OFFSET_8812(desc, txpwr_offset);
+
+	PHYDM_DBG(dm, DBG_DYN_TXPWR, "RSSI=%d, txpwr_ofst=%d\n",
+		  rssi_tmp, txpwr_offset);
+}
+#endif /*@#if (DM_ODM_SUPPORT_TYPE == ODM_WIN)*/
 
 #endif /* #if (RTL8821A_SUPPORT == 1) */

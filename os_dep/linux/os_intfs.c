@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2017 Realtek Corporation.
+ * Copyright(c) 2007 - 2019 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -72,7 +72,7 @@ int rtw_scan_mode = 1;/* active, passive */
 #else
 	int rtw_wow_power_mgnt = PS_MODE_ACTIVE;
 	int rtw_wow_lps_level = LPS_NORMAL;
-#endif	
+#endif
 #endif /* CONFIG_WOWLAN */
 
 #else /* !CONFIG_POWER_SAVING */
@@ -91,6 +91,10 @@ int rtw_nb_config = CONFIG_NB_VALUE;
 module_param(rtw_nb_config, int, 0644);
 MODULE_PARM_DESC(rtw_nb_config, "5M/10M/Normal bandwidth configuration");
 #endif
+
+int rtw_monitor_disable_1m = 0;
+module_param(rtw_monitor_disable_1m, int, 0644);
+MODULE_PARM_DESC(rtw_monitor_disable_1m, "Disable default 1Mbps rate for monitor injected frames");
 
 module_param(rtw_ips_mode, int, 0644);
 MODULE_PARM_DESC(rtw_ips_mode, "The default IPS mode");
@@ -118,7 +122,7 @@ MODULE_PARM_DESC(rtw_wow_lps_1t1r, "The default WOW LPS 1T1R setting");
 #endif
 #endif /* CONFIG_WOWLAN */
 
-/* LPS: 
+/* LPS:
  * rtw_smart_ps = 0 => TX: pwr bit = 1, RX: PS_Poll
  * rtw_smart_ps = 1 => TX: pwr bit = 0, RX: PS_Poll
  * rtw_smart_ps = 2 => TX: pwr bit = 0, RX: NullData with pwr bit = 0
@@ -127,8 +131,8 @@ int rtw_smart_ps = 2;
 
 int rtw_max_bss_cnt = 0;
 module_param(rtw_max_bss_cnt, int, 0644);
-#ifdef CONFIG_WMMPS_STA	
-/* WMMPS: 
+#ifdef CONFIG_WMMPS_STA
+/* WMMPS:
  * rtw_smart_ps = 0 => Only for fw test
  * rtw_smart_ps = 1 => Refer to Beacon's TIM Bitmap
  * rtw_smart_ps = 2 => Don't refer to Beacon's TIM Bitmap
@@ -142,7 +146,7 @@ int rtw_check_fw_ps = 1;
 int rtw_early_mode = 1;
 #endif
 
-#ifdef CONFIG_RTW_SW_LED
+#ifdef CONFIG_SW_LED
 int rtw_led_ctrl = 1; // default to normal blink
 #endif
 
@@ -248,10 +252,10 @@ int rtw_bw_mode = CONFIG_RTW_CUSTOMIZE_BWMODE;
 int rtw_bw_mode = 0x21;
 #endif
 int rtw_ampdu_enable = 1;/* for enable tx_ampdu , */ /* 0: disable, 0x1:enable */
-int rtw_rx_stbc = 3;/* 0: disable, bit(0):enable 2.4g, bit(1):enable 5g, default is set to enable 2.4GHZ for IOT issue with bufflao's AP at 5GHZ */
-#if (defined(CONFIG_RTL8814A) || defined(CONFIG_RTL8822B)) && defined(CONFIG_PCI_HCI)
+int rtw_rx_stbc = 1;/* 0: disable, bit(0):enable 2.4g, bit(1):enable 5g, default is set to enable 2.4GHZ for IOT issue with bufflao's AP at 5GHZ */
+#if (defined(CONFIG_RTL8814A) || defined(CONFIG_RTL8814B) || defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8822C)) && defined(CONFIG_PCI_HCI)
 int rtw_rx_ampdu_amsdu = 2;/* 0: disabled, 1:enabled, 2:auto . There is an IOT issu with DLINK DIR-629 when the flag turn on */
-#elif (defined(CONFIG_RTL8822B) && defined(CONFIG_SDIO_HCI))
+#elif ((defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8822C)) && defined(CONFIG_SDIO_HCI))
 int rtw_rx_ampdu_amsdu = 1;
 #else
 int rtw_rx_ampdu_amsdu;/* 0: disabled, 1:enabled, 2:auto . There is an IOT issu with DLINK DIR-629 when the flag turn on */
@@ -262,6 +266,8 @@ int rtw_rx_ampdu_amsdu;/* 0: disabled, 1:enabled, 2:auto . There is an IOT issu 
 * 1: Force the AMSDU filed in ADDBA Resp. to be enabled.
 */
 int rtw_tx_ampdu_amsdu = 2;
+
+int rtw_quick_addba_req = 0;
 
 static uint rtw_rx_ampdu_sz_limit_1ss[4] = CONFIG_RTW_RX_AMPDU_SZ_LIMIT_1SS;
 static uint rtw_rx_ampdu_sz_limit_1ss_num = 0;
@@ -328,20 +334,28 @@ int rtw_check_hw_status = 0;
 int rtw_low_power = 0;
 int rtw_wifi_spec = 0;
 
+
+int rtw_trx_path_bmp = 0x00;
+module_param(rtw_trx_path_bmp, int, 0644); /* [7:4]TX path bmp, [0:3]RX path bmp, 0: not specified */
+
 #ifdef CONFIG_SPECIAL_RF_PATH /* configure Nss/xTxR IC to 1ss/1T1R */
-int rtw_rf_path = RF_1T1R;
+int rtw_tx_path_lmt = 1;
+int rtw_rx_path_lmt = 1;
 int rtw_tx_nss = 1;
 int rtw_rx_nss = 1;
 #elif defined(CONFIG_CUSTOMER01_SMART_ANTENNA)
-int rtw_rf_path = RF_2T2R;
+int rtw_tx_path_lmt = 2;
+int rtw_rx_path_lmt = 2;
 int rtw_tx_nss = 1;
 int rtw_rx_nss = 1;
 #else
-int rtw_rf_path = RF_TYPE_MAX;
+int rtw_tx_path_lmt = 0;
+int rtw_rx_path_lmt = 0;
 int rtw_tx_nss = 0;
 int rtw_rx_nss = 0;
 #endif
-module_param(rtw_rf_path, int, 0644);
+module_param(rtw_tx_path_lmt, int, 0644); /* limit of TX path number, 0: not specified */
+module_param(rtw_rx_path_lmt, int, 0644); /* limit of RX path number, 0: not specified */
 module_param(rtw_tx_nss, int, 0644);
 module_param(rtw_rx_nss, int, 0644);
 
@@ -495,6 +509,13 @@ char *rtw_initmac = 0;  /* temp mac address if users want to use instead of the 
 		int rtw_virtual_iface_num = 1;
 	#endif
 
+#ifdef CONFIG_P2P
+	int rtw_sel_p2p_iface = IFACE_ID1;
+
+	module_param(rtw_sel_p2p_iface, int, 0644);
+
+#endif
+
 #endif
 #ifdef CONFIG_AP_MODE
 u8 rtw_bmc_tx_rate = MGN_UNKNOWN;
@@ -530,6 +551,7 @@ module_param(rtw_ampdu_enable, int, 0644);
 module_param(rtw_rx_stbc, int, 0644);
 module_param(rtw_rx_ampdu_amsdu, int, 0644);
 module_param(rtw_tx_ampdu_amsdu, int, 0644);
+module_param(rtw_quick_addba_req, int, 0644);
 #endif /* CONFIG_80211N_HT */
 
 #ifdef CONFIG_BEAMFORMING
@@ -566,7 +588,7 @@ module_param(rtw_pci_aspm_enable, int, 0644);
 module_param(rtw_early_mode, int, 0644);
 #endif
 
-#ifdef CONFIG_RTW_SW_LED
+#ifdef CONFIG_SW_LED
 module_param(rtw_led_ctrl, int, 0644);
 MODULE_PARM_DESC(rtw_led_ctrl,"Led Control: 0=Always off, 1=Normal blink, 2=Always on");
 #endif
@@ -738,7 +760,7 @@ static int rtw_target_tx_pwr_2g_d_num = 0;
 module_param_array(rtw_target_tx_pwr_2g_d, int, &rtw_target_tx_pwr_2g_d_num, 0644);
 MODULE_PARM_DESC(rtw_target_tx_pwr_2g_d, "2.4G target tx power (unit:dBm) of RF path D for each rate section, should match the real calibrate power, -1: undefined");
 
-#ifdef CONFIG_IEEE80211_BAND_5GHZ
+#if CONFIG_IEEE80211_BAND_5GHZ
 static int rtw_target_tx_pwr_5g_a[RATE_SECTION_NUM - 1] = CONFIG_RTW_TARGET_TX_PWR_5G_A;
 static int rtw_target_tx_pwr_5g_a_num = 0;
 module_param_array(rtw_target_tx_pwr_5g_a, int, &rtw_target_tx_pwr_5g_a_num, 0644);
@@ -941,7 +963,18 @@ module_param(rtw_tdmadig_mode, int, 0644);
 module_param(rtw_dynamic_tdmadig, int, 0644);
 #endif/*CONFIG_TDMADIG*/
 
+/*dynamic RRSR default enable*/
+int rtw_en_dyn_rrsr = 1;
+int rtw_rrsr_value = 0xFFFFFFFF;
+module_param(rtw_en_dyn_rrsr, int, 0644);
+module_param(rtw_rrsr_value, int, 0644);
+
 #ifdef CONFIG_WOWLAN
+/*
+ * 0: disable, 1: enable
+ */
+uint rtw_wow_enable = 1;
+module_param(rtw_wow_enable, uint, 0644);
 /*
  * bit[0]: magic packet wake up
  * bit[1]: unucast packet(HW/FW unuicast)
@@ -956,6 +989,18 @@ module_param(rtw_wakeup_event, uint, 0644);
  */
 uint rtw_suspend_type = RTW_SUSPEND_TYPE;
 module_param(rtw_suspend_type, uint, 0644);
+#endif
+
+#ifdef RTW_BUSY_DENY_SCAN
+uint rtw_scan_interval_thr = BUSY_TRAFFIC_SCAN_DENY_PERIOD;
+module_param(rtw_scan_interval_thr, uint, 0644);
+MODULE_PARM_DESC(rtw_scan_interval_thr, "Threshold used to judge if scan " \
+		 "request comes from scan UI, unit is ms.");
+#endif /* RTW_BUSY_DENY_SCAN */
+
+#ifdef CONFIG_RTL8822C_XCAP_NEW_POLICY
+uint rtw_8822c_xcap_overwrite = 1;
+module_param(rtw_8822c_xcap_overwrite, uint, 0644);
 #endif
 
 #if CONFIG_TX_AC_LIFETIME
@@ -986,7 +1031,7 @@ static void rtw_regsty_load_tx_ac_lifetime(struct registry_priv *regsty)
 			conf->en = parm[0] & 0xF;
 			conf->vo_vi = parm[1];
 			conf->be_bk = parm[2];
-		}	
+		}
 	}
 }
 #endif
@@ -1010,7 +1055,7 @@ void rtw_regsty_load_target_tx_power(struct registry_priv *regsty)
 			regsty->target_tx_pwr_2g[path][rs] = target_tx_pwr[rs];
 	}
 
-#ifdef CONFIG_IEEE80211_BAND_5GHZ
+#if CONFIG_IEEE80211_BAND_5GHZ
 	for (path = RF_PATH_A; path < RF_PATH_MAX; path++) {
 		if (path == RF_PATH_A)
 			target_tx_pwr = rtw_target_tx_pwr_5g_a;
@@ -1115,6 +1160,8 @@ uint loadparam(_adapter *padapter)
 		registry_par->ips_mode = (u8)rtw_ips_mode;
 	#endif/*CONFIG_TDMADIG*/
 	registry_par->lps_level = (u8)rtw_lps_level;
+	registry_par->en_dyn_rrsr = (u8)rtw_en_dyn_rrsr;
+	registry_par->set_rrsr_value = (u32)rtw_rrsr_value;
 #ifdef CONFIG_LPS_1T1R
 	registry_par->lps_1t1r = (u8)(rtw_lps_1t1r ? 1 : 0);
 #endif
@@ -1174,6 +1221,7 @@ uint loadparam(_adapter *padapter)
 		registry_par->rx_stbc = (u8)rtw_rx_stbc;
 		registry_par->rx_ampdu_amsdu = (u8)rtw_rx_ampdu_amsdu;
 		registry_par->tx_ampdu_amsdu = (u8)rtw_tx_ampdu_amsdu;
+		registry_par->tx_quick_addba_req = (u8)rtw_quick_addba_req;
 		registry_par->short_gi = (u8)rtw_short_gi;
 		registry_par->ldpc_cap = (u8)rtw_ldpc_cap;
 #if defined(CONFIG_CUSTOMER01_SMART_ANTENNA)
@@ -1209,11 +1257,13 @@ uint loadparam(_adapter *padapter)
 #ifdef CONFIG_TX_EARLY_MODE
 	registry_par->early_mode = (u8)rtw_early_mode;
 #endif
-#ifdef CONFIG_RTW_SW_LED
+#ifdef CONFIG_SW_LED
 	registry_par->led_ctrl = (u8)rtw_led_ctrl;
 #endif
 	registry_par->lowrate_two_xmit = (u8)rtw_lowrate_two_xmit;
-	registry_par->rf_path = (u8)rtw_rf_path; /*rf_config/rtw_rf_config*/
+	registry_par->trx_path_bmp = (u8)rtw_trx_path_bmp;
+	registry_par->tx_path_lmt = (u8)rtw_tx_path_lmt;
+	registry_par->rx_path_lmt = (u8)rtw_rx_path_lmt;
 	registry_par->tx_nss = (u8)rtw_tx_nss;
 	registry_par->rx_nss = (u8)rtw_rx_nss;
 	registry_par->low_power = (u8)rtw_low_power;
@@ -1253,10 +1303,6 @@ uint loadparam(_adapter *padapter)
 	registry_par->drv_ant_band_switch = (u8) rtw_drv_ant_band_switch;
 
 	registry_par->switch_usb_mode = (u8)rtw_switch_usb_mode;
-
-#ifdef CONFIG_AUTOSUSPEND
-	registry_par->usbss_enable = (u8)rtw_enusbss;/* 0:disable,1:enable */
-#endif
 #ifdef SUPPORT_HW_RFOFF_DETECTED
 	registry_par->hwpdn_mode = (u8)rtw_hwpdn_mode;/* 0:disable,1:enable,2:by EFUSE config */
 	registry_par->hwpwrp_detect = (u8)rtw_hwpwrp_detect;/* 0:disable,1:enable */
@@ -1288,6 +1334,10 @@ uint loadparam(_adapter *padapter)
 
 #ifdef CONFIG_CONCURRENT_MODE
 	registry_par->virtual_iface_num = (u8)rtw_virtual_iface_num;
+#ifdef CONFIG_P2P
+	registry_par->sel_p2p_iface = (u8)rtw_sel_p2p_iface;
+	RTW_INFO("%s, Select P2P interface: iface_id:%d\n", __func__, registry_par->sel_p2p_iface);
+#endif
 #endif
 	registry_par->pll_ref_clk_sel = (u8)rtw_pll_ref_clk_sel;
 
@@ -1366,6 +1416,7 @@ uint loadparam(_adapter *padapter)
 #endif /*CONFIG_MCC_MODE */
 
 #ifdef CONFIG_WOWLAN
+	registry_par->wowlan_enable = rtw_wow_enable;
 	registry_par->wakeup_event = rtw_wakeup_event;
 	registry_par->suspend_type = rtw_suspend_type;
 #endif
@@ -1418,6 +1469,16 @@ uint loadparam(_adapter *padapter)
 #ifdef CONFIG_RTW_MESH
 	registry_par->peer_alive_based_preq = rtw_peer_alive_based_preq;
 #endif
+
+#ifdef RTW_BUSY_DENY_SCAN
+	registry_par->scan_interval_thr = rtw_scan_interval_thr;
+#endif
+
+#ifdef CONFIG_RTL8822C_XCAP_NEW_POLICY
+	registry_par->rtw_8822c_xcap_overwrite = (u8)rtw_8822c_xcap_overwrite;
+#endif
+	registry_par->monitor_disable_1m = (u8)rtw_monitor_disable_1m;
+
 	return status;
 }
 
@@ -1453,9 +1514,9 @@ static int rtw_net_set_mac_address(struct net_device *pnetdev, void *addr)
 	}
 
 	/* if the net_device is linked, it's not permit to modify mac addr */
-	if (check_fwstate(pmlmepriv, _FW_UNDER_LINKING) ||
-	    check_fwstate(pmlmepriv, _FW_LINKED) ||
-	    check_fwstate(pmlmepriv, _FW_UNDER_SURVEY)) {
+	if (check_fwstate(pmlmepriv, WIFI_UNDER_LINKING) ||
+	    check_fwstate(pmlmepriv, WIFI_ASOC_STATE) ||
+	    check_fwstate(pmlmepriv, WIFI_UNDER_SURVEY)) {
 		RTW_INFO(FUNC_ADPT_FMT": The net_device's is not idle currently\n"
 			 , FUNC_ADPT_ARG(padapter));
 
@@ -1559,12 +1620,12 @@ unsigned int rtw_classify8021d(struct sk_buff *skb)
 
 static u16 rtw_select_queue(struct net_device *dev, struct sk_buff *skb
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 13, 0)
-	#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0) || RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(8,0)
+	#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0)
 	, struct net_device *sb_dev
 	#else
 	, void *accel_priv
 	#endif
-	#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 14, 0) & LINUX_VERSION_CODE < KERNEL_VERSION(5, 2, 0)
+	#if ((LINUX_VERSION_CODE >= KERNEL_VERSION(3, 14, 0)) && (LINUX_VERSION_CODE < KERNEL_VERSION(5, 2, 0)))
 	, select_queue_fallback_t fallback
 	#endif
 #endif
@@ -1626,7 +1687,6 @@ static u8 is_rtw_ndev(struct net_device *ndev)
 static int rtw_ndev_notifier_call(struct notifier_block *nb, unsigned long state, void *ptr)
 {
 	struct net_device *ndev;
-	_adapter *adapter;
 
 	if (ptr == NULL)
 		return NOTIFY_DONE;
@@ -1640,8 +1700,6 @@ static int rtw_ndev_notifier_call(struct notifier_block *nb, unsigned long state
 	if (ndev == NULL)
 		return NOTIFY_DONE;
 
-	adapter = rtw_netdev_priv(ndev);
-
 	if (!is_rtw_ndev(ndev))
 		return NOTIFY_DONE;
 
@@ -1650,8 +1708,6 @@ static int rtw_ndev_notifier_call(struct notifier_block *nb, unsigned long state
 	switch (state) {
 	case NETDEV_CHANGENAME:
 		rtw_adapter_proc_replace(ndev);
-		strncpy(adapter->old_ifname, ndev->name, IFNAMSIZ);
-		adapter->old_ifname[IFNAMSIZ-1] = 0;
 		break;
 	#ifdef CONFIG_NEW_NETDEV_HDL
 	case NETDEV_PRE_UP :
@@ -1859,13 +1915,10 @@ int rtw_os_ndev_alloc(_adapter *adapter)
 #if defined(CONFIG_IOCTL_CFG80211)
 	if (rtw_cfg80211_ndev_res_alloc(adapter) != _SUCCESS) {
 		rtw_warn_on(1);
-		goto free_ndev;
-	}
+	} else
 #endif
-
 	ret = _SUCCESS;
 
-free_ndev:
 	if (ret != _SUCCESS && ndev)
 		rtw_free_netdev(ndev);
 exit:
@@ -1916,10 +1969,11 @@ int rtw_os_ndev_register(_adapter *adapter, const char *name)
 
 	_rtw_memcpy(ndev->dev_addr, adapter_mac_addr(adapter), ETH_ALEN);
 #if defined(CONFIG_NET_NS)
-    dev_net_set(ndev, wiphy_net(adapter_to_wiphy(adapter)));
+	dev_net_set(ndev, wiphy_net(adapter_to_wiphy(adapter)));
 #endif //defined(CONFIG_NET_NS)
 
 	/* Tell the network stack we exist */
+
 	if (rtnl_lock_needed)
 		ret = (register_netdev(ndev) == 0) ? _SUCCESS : _FAIL;
 	else
@@ -1939,7 +1993,9 @@ int rtw_os_ndev_register(_adapter *adapter, const char *name)
 	}
 #endif
 
+#if defined(CONFIG_IOCTL_CFG80211)
 exit:
+#endif
 #ifdef CONFIG_RTW_NAPI
 	if (ret != _SUCCESS)
 		netif_napi_del(&adapter->napi);
@@ -2037,8 +2093,7 @@ int rtw_os_ndevs_alloc(struct dvobj_priv *dvobj)
 #if defined(CONFIG_IOCTL_CFG80211)
 	if (rtw_cfg80211_dev_res_alloc(dvobj) != _SUCCESS) {
 		rtw_warn_on(1);
-		status = _FAIL;
-		goto exit;
+		return _FAIL;
 	}
 #endif
 
@@ -2078,7 +2133,7 @@ int rtw_os_ndevs_alloc(struct dvobj_priv *dvobj)
 	if (status != _SUCCESS)
 		rtw_cfg80211_dev_res_free(dvobj);
 #endif
-exit:
+
 	return status;
 }
 
@@ -2155,6 +2210,7 @@ u32 rtw_start_drv_threads(_adapter *padapter)
 				_rtw_down_sema(&padapter->cmdpriv.start_cmdthread_sema); /* wait for cmd_thread to run */
 		}
 	}
+
 
 #ifdef CONFIG_EVENT_THREAD_MODE
 	if (padapter->evtThread == NULL) {
@@ -2250,11 +2306,14 @@ u8 rtw_init_default_value(_adapter *padapter)
 	psecuritypriv->dot118021x_bmc_cam_id = INVALID_SEC_MAC_CAM_ID;
 #endif
 
+
 	/* pwrctrl_priv */
+
 
 	/* registry_priv */
 	rtw_init_registrypriv_dev_network(padapter);
 	rtw_update_registrypriv_dev_network(padapter);
+
 
 	/* hal_priv */
 	rtw_hal_def_value_init(padapter);
@@ -2317,6 +2376,13 @@ u8 rtw_init_default_value(_adapter *padapter)
 	else
 		rtw_nm_disable(padapter);
 #endif
+
+#ifdef CONFIG_RTW_TOKEN_BASED_XMIT
+	ATOMIC_SET(&padapter->tbtx_tx_pause, _FALSE);
+	ATOMIC_SET(&padapter->tbtx_remove_tx_pause, _FALSE);
+	padapter->tbtx_capability = _TRUE;
+#endif
+
 	return ret;
 }
 #ifdef CONFIG_CLIENT_PORT_CFG
@@ -2400,6 +2466,7 @@ struct dvobj_priv *devobj_init(void)
 #ifdef CONFIG_RTW_NAPI_DYNAMIC
 	pdvobj->en_napi_dynamic = 0;
 #endif /* CONFIG_RTW_NAPI_DYNAMIC */
+
 
 #ifdef CONFIG_RTW_TPT_MODE
 	pdvobj->tpt_mode = 0;
@@ -2533,13 +2600,7 @@ u8 rtw_reset_drv_sw(_adapter *padapter)
 	pmlmepriv->LinkDetectInfo.TrafficTransitionCount = 0;
 	pmlmepriv->LinkDetectInfo.LowPowerTransitionCount = 0;
 
-	_clr_fwstate_(pmlmepriv, _FW_UNDER_SURVEY | _FW_UNDER_LINKING);
-
-#ifdef CONFIG_AUTOSUSPEND
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 22) && LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 34))
-	adapter_to_dvobj(padapter)->pusbdev->autosuspend_disabled = 1;/* autosuspend disabled by the user */
-#endif
-#endif
+	_clr_fwstate_(pmlmepriv, WIFI_UNDER_SURVEY | WIFI_UNDER_LINKING);
 
 #ifdef DBG_CONFIG_ERROR_DETECT
 	if (is_primary_adapter(padapter))
@@ -2585,9 +2646,13 @@ u8 rtw_init_drv_sw(_adapter *padapter)
 		struct hal_spec_t *hal_spec = GET_HAL_SPEC(padapter);
 
 		dvobj->macid_ctl.num = rtw_min(hal_spec->macid_num, MACID_NUM_SW_LIMIT);
-
+		dvobj->macid_ctl.macid_cap = hal_spec->macid_cap;
+		dvobj->macid_ctl.macid_txrpt = hal_spec->macid_txrpt;
+		dvobj->macid_ctl.macid_txrpt_pgsz = hal_spec->macid_txrpt_pgsz;
 		dvobj->cam_ctl.sec_cap = hal_spec->sec_cap;
 		dvobj->cam_ctl.num = rtw_min(hal_spec->sec_cam_ent_num, SEC_CAM_ENT_NUM_SW_LIMIT);
+
+		dvobj->wow_ctl.wow_cap = hal_spec->wow_cap;
 
 		#if CONFIG_TX_AC_LIFETIME
 		{
@@ -2761,6 +2826,8 @@ u8 rtw_init_drv_sw(_adapter *padapter)
 
 exit:
 
+
+
 	return ret8;
 
 }
@@ -2816,6 +2883,11 @@ void rtw_cancel_all_timer(_adapter *padapter)
 #ifdef CONFIG_LPS_RPWM_TIMER
 	_cancel_timer_ex(&(adapter_to_pwrctl(padapter)->pwr_rpwm_timer));
 #endif /* CONFIG_LPS_RPWM_TIMER */
+
+#ifdef CONFIG_RTW_TOKEN_BASED_XMIT
+	_cancel_timer_ex(&padapter->mlmeextpriv.tbtx_xmit_timer);
+	_cancel_timer_ex(&padapter->mlmeextpriv.tbtx_token_dispatch_timer);
+#endif
 
 	/* cancel dm timer */
 	rtw_hal_dm_deinit(padapter);
@@ -2896,11 +2968,13 @@ void rtw_intf_start(_adapter *adapter)
 {
 	if (adapter->intf_start)
 		adapter->intf_start(adapter);
+	GET_HAL_DATA(adapter)->intf_start = 1;
 }
 void rtw_intf_stop(_adapter *adapter)
 {
 	if (adapter->intf_stop)
 		adapter->intf_stop(adapter);
+	GET_HAL_DATA(adapter)->intf_start = 0;
 }
 
 #ifdef CONFIG_CONCURRENT_MODE
@@ -3032,8 +3106,6 @@ static int netdev_vir_if_close(struct net_device *pnetdev)
 #endif
 
 #ifdef CONFIG_IOCTL_CFG80211
-	wdev->iftype = NL80211_IFTYPE_MONITOR;
-	wdev->current_bss = NULL;
 	rtw_scan_abort(padapter);
 	rtw_cfg80211_wait_scan_req_empty(padapter, 200);
 	adapter_wdev_data(padapter)->bandroid_scan = _FALSE;
@@ -3116,6 +3188,7 @@ _adapter *rtw_drv_add_vir_if(_adapter *primary_padapter,
 	padapter->hw_port = HW_PORT1;
 #endif
 
+
 	/****** hook vir if into dvobj ******/
 	pdvobjpriv = adapter_to_dvobj(padapter);
 	padapter->iface_id = pdvobjpriv->iface_nums;
@@ -3133,6 +3206,7 @@ _adapter *rtw_drv_add_vir_if(_adapter *primary_padapter,
 	if (rtw_init_drv_sw(padapter) != _SUCCESS)
 		goto free_drv_sw;
 
+
 	/*get mac address from primary_padapter*/
 	_rtw_memcpy(mac, adapter_mac_addr(primary_padapter), ETH_ALEN);
 
@@ -3142,7 +3216,7 @@ _adapter *rtw_drv_add_vir_if(_adapter *primary_padapter,
 	*/
 	mac[0] |= BIT(1);
 	if (padapter->iface_id > IFACE_ID1)
-		mac[4] ^= BIT(padapter->iface_id);
+		mac[0] ^= ((padapter->iface_id)<<2);
 
 	_rtw_memcpy(adapter_mac_addr(padapter), mac, ETH_ALEN);
 	/* update mac-address to mbsid-cam cache*/
@@ -3182,7 +3256,7 @@ void rtw_drv_stop_vir_if(_adapter *padapter)
 
 	pnetdev = padapter->pnetdev;
 
-	if (check_fwstate(pmlmepriv, _FW_LINKED))
+	if (check_fwstate(pmlmepriv, WIFI_ASOC_STATE))
 		rtw_disassoc_cmd(padapter, 0, RTW_CMDF_DIRECTLY);
 
 #ifdef CONFIG_AP_MODE
@@ -3227,6 +3301,7 @@ void rtw_drv_free_vir_if(_adapter *padapter)
 	rtw_vmfree((u8 *)padapter, sizeof(_adapter));
 }
 
+
 void rtw_drv_stop_vir_ifaces(struct dvobj_priv *dvobj)
 {
 	int i;
@@ -3242,6 +3317,7 @@ void rtw_drv_free_vir_ifaces(struct dvobj_priv *dvobj)
 	for (i = VIF_START_ID; i < dvobj->iface_nums; i++)
 		rtw_drv_free_vir_if(dvobj->padapters[i]);
 }
+
 
 #endif /*end of CONFIG_CONCURRENT_MODE*/
 
@@ -3384,8 +3460,7 @@ int rtw_os_ndevs_register(struct dvobj_priv *dvobj)
 #if defined(CONFIG_IOCTL_CFG80211)
 	if (rtw_cfg80211_dev_res_register(dvobj) != _SUCCESS) {
 		rtw_warn_on(1);
-		status = _FAIL;
-		goto exit;
+		return _FAIL;
 	}
 #endif
 
@@ -3434,7 +3509,6 @@ int rtw_os_ndevs_register(struct dvobj_priv *dvobj)
 	if (status != _SUCCESS)
 		rtw_cfg80211_dev_res_unregister(dvobj);
 #endif
-exit:
 	return status;
 }
 
@@ -3543,14 +3617,7 @@ int _netdev_open(struct net_device *pnetdev)
 
 	RTW_INFO(FUNC_NDEV_FMT" start\n", FUNC_NDEV_ARG(pnetdev));
 
-	#ifdef CONFIG_AUTOSUSPEND
-	if (pwrctrlpriv->ps_flag == _TRUE) {
-		padapter->net_closed = _FALSE;
-		goto netdev_open_normal_process;
-	}
-	#endif /*CONFIG_AUTOSUSPEND*/
-
-	if (!rtw_is_hw_init_completed(padapter)) { // ips 
+	if (!rtw_is_hw_init_completed(padapter)) { // ips
 		rtw_clr_surprise_removed(padapter);
 		rtw_clr_drv_stopped(padapter);
 		RTW_ENABLE_FUNC(padapter, DF_RX_BIT);
@@ -3612,15 +3679,13 @@ int _netdev_open(struct net_device *pnetdev)
 			netdev_br_init(pnetdev);
 		#endif /* CONFIG_BR_EXT */
 
+
 		padapter->bup = _TRUE;
 		padapter->net_closed = _FALSE;
 		padapter->netif_up = _TRUE;
 		pwrctrlpriv->bips_processing = _FALSE;
 	}
 
-#ifdef CONFIG_AUTOSUSPEND
-netdev_open_normal_process:
-#endif
 	RTW_INFO(FUNC_NDEV_FMT" Success (bup=%d)\n", FUNC_NDEV_ARG(pnetdev), padapter->bup);
 	return 0;
 
@@ -3653,6 +3718,7 @@ int _netdev_open(struct net_device *pnetdev)
 	HAL_DATA_TYPE		*pHalData = GET_HAL_DATA(padapter);
 #endif /* CONFIG_BT_COEXIST_SOCKET_TRX */
 
+
 	RTW_INFO(FUNC_NDEV_FMT" , bup=%d\n", FUNC_NDEV_ARG(pnetdev), padapter->bup);
 
 	padapter->netif_up = _TRUE;
@@ -3660,13 +3726,6 @@ int _netdev_open(struct net_device *pnetdev)
 #ifdef CONFIG_PLATFORM_INTEL_BYT
 	rtw_sdio_set_power(1);
 #endif /* CONFIG_PLATFORM_INTEL_BYT */
-
-	#ifdef CONFIG_AUTOSUSPEND
-	if (pwrctrlpriv->ps_flag == _TRUE) {
-		padapter->net_closed = _FALSE;
-		goto netdev_open_normal_process;
-	}
-	#endif
 
 	if (padapter->bup == _FALSE) {
 #ifdef CONFIG_PLATFORM_INTEL_BYT
@@ -3734,7 +3793,7 @@ int _netdev_open(struct net_device *pnetdev)
 	rtw_set_pwr_state_check_timer(pwrctrlpriv);
 #endif
 
-	/* rtw_netif_carrier_on(pnetdev); */ /* call this func when rtw_joinbss_event_callback return success */
+	rtw_netif_carrier_on(pnetdev); /* call this func when rtw_joinbss_event_callback return success */
 	rtw_netif_wake_queue(pnetdev);
 
 #ifdef CONFIG_BR_EXT
@@ -3750,10 +3809,6 @@ int _netdev_open(struct net_device *pnetdev)
 		RTW_INFO("CONFIG_BT_COEXIST: VIRTUAL_ADAPTER\n");
 #endif /* CONFIG_BT_COEXIST_SOCKET_TRX */
 
-#ifdef CONFIG_AUTOSUSPEND
-netdev_open_normal_process:
-#endif
-
 #ifdef CONFIG_CONCURRENT_MODE
 	{
 		_adapter *sec_adapter = adapter_to_dvobj(padapter)->padapters[IFACE_ID1];
@@ -3765,7 +3820,7 @@ netdev_open_normal_process:
 	}
 #endif
 
-#ifdef CONFIG_RTW_CFGVEDNOR_LLSTATS
+#ifdef CONFIG_RTW_CFGVENDOR_LLSTATS
 	pwrctrlpriv->radio_on_start_time = rtw_get_current_time();
 	pwrctrlpriv->pwr_saving_start_time = rtw_get_current_time();
 	pwrctrlpriv->pwr_saving_time = 0;
@@ -3822,6 +3877,7 @@ int netdev_open(struct net_device *pnetdev)
 #endif
 	_exit_critical_mutex(&(adapter_to_dvobj(padapter)->hw_init_mutex), NULL);
 
+
 #ifdef CONFIG_AUTO_AP_MODE
 	if (padapter->iface_id == IFACE_ID2)
 		rtw_start_auto_ap(padapter);
@@ -3839,6 +3895,7 @@ int  ips_netdrv_open(_adapter *padapter)
 	padapter->net_closed = _FALSE;
 
 	RTW_INFO("===> %s.........\n", __FUNCTION__);
+
 
 	rtw_clr_drv_stopped(padapter);
 	/* padapter->bup = _TRUE; */
@@ -3926,6 +3983,7 @@ void rtw_ips_dev_unload(_adapter *padapter)
 #endif /* defined(CONFIG_SWLPS_IN_IPS) || defined(CONFIG_FWLPS_IN_IPS) */
 	RTW_INFO("====> %s...\n", __FUNCTION__);
 
+
 #if defined(CONFIG_SWLPS_IN_IPS) || defined(CONFIG_FWLPS_IN_IPS)
 #ifdef DBG_CONFIG_ERROR_DETECT
 	if (psrtpriv->silent_reset_inprogress == _TRUE)
@@ -3948,13 +4006,6 @@ int _pm_netdev_open(_adapter *padapter)
 	struct net_device *pnetdev = padapter->pnetdev;
 
 	RTW_INFO(FUNC_NDEV_FMT" start\n", FUNC_NDEV_ARG(pnetdev));
-
-	#ifdef CONFIG_AUTOSUSPEND
-	if (pwrctrlpriv->ps_flag == _TRUE) {
-		padapter->net_closed = _FALSE;
-		goto netdev_open_normal_process;
-	}
-	#endif /*CONFIG_AUTOSUSPEND*/
 
 	if (!rtw_is_hw_init_completed(padapter)) { // ips
 		rtw_clr_surprise_removed(padapter);
@@ -3993,9 +4044,6 @@ int _pm_netdev_open(_adapter *padapter)
 		pwrctrlpriv->bips_processing = _FALSE;
 	}
 
-#ifdef CONFIG_AUTOSUSPEND
-netdev_open_normal_process:
-#endif
 	RTW_INFO(FUNC_NDEV_FMT" Success (bup=%d)\n", FUNC_NDEV_ARG(pnetdev), padapter->bup);
 	return 0;
 
@@ -4068,13 +4116,6 @@ static int netdev_close(struct net_device *pnetdev)
 
 	RTW_INFO(FUNC_NDEV_FMT" , bup=%d\n", FUNC_NDEV_ARG(pnetdev), padapter->bup);
 #ifndef CONFIG_PLATFORM_INTEL_BYT
-	#ifdef CONFIG_AUTOSUSPEND
-	if (pwrctl->bInternalAutoSuspend == _TRUE) {
-		/* rtw_pwr_wakeup(padapter); */
-		if (pwrctl->rf_pwrstate == rf_off)
-			pwrctl->ps_flag = _TRUE;
-	}
-	#endif
 	padapter->net_closed = _TRUE;
 	padapter->netif_up = _FALSE;
 	pmlmepriv->LinkDetectInfo.bBusyTraffic = _FALSE;
@@ -4098,7 +4139,7 @@ static int netdev_close(struct net_device *pnetdev)
 		if (pnetdev)
 			rtw_netif_stop_queue(pnetdev);
 
-#ifndef CONFIG_ANDROID
+#ifndef CONFIG_RTW_ANDROID
 		/* s2. */
 		LeaveAllPowerSaveMode(padapter);
 		rtw_disassoc_cmd(padapter, 500, RTW_CMDF_WAIT_ACK);
@@ -4237,7 +4278,9 @@ static int route_dump(u32 *gw_addr , int *gw_index)
 	struct msghdr msg;
 	struct iovec iov;
 	struct sockaddr_nl nladdr;
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 10, 0))
 	mm_segment_t oldfs;
+#endif
 	char *pg;
 	int size = 0;
 
@@ -4276,14 +4319,18 @@ static int route_dump(u32 *gw_addr , int *gw_index)
 	msg.msg_controllen = 0;
 	msg.msg_flags = MSG_DONTWAIT;
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 10, 0))
 	oldfs = get_fs();
 	set_fs(KERNEL_DS);
+#endif
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 1, 0))
 	err = sock_sendmsg(sock, &msg);
 #else
 	err = sock_sendmsg(sock, &msg, sizeof(req));
 #endif
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 10, 0))
 	set_fs(oldfs);
+#endif
 
 	if (err < 0)
 		goto out_sock;
@@ -4308,14 +4355,18 @@ restart:
 		iov_iter_init(&msg.msg_iter, READ, &iov, 1, PAGE_SIZE);
 #endif
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 10, 0))
 		oldfs = get_fs();
 		set_fs(KERNEL_DS);
+#endif
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0))
 		err = sock_recvmsg(sock, &msg, MSG_DONTWAIT);
 #else
 		err = sock_recvmsg(sock, &msg, PAGE_SIZE, MSG_DONTWAIT);
 #endif
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 10, 0))
 		set_fs(oldfs);
+#endif
 
 		if (err < 0)
 			goto out_sock_pg;
@@ -4386,14 +4437,18 @@ done:
 		msg.msg_controllen = 0;
 		msg.msg_flags = MSG_DONTWAIT;
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 10, 0))
 		oldfs = get_fs();
 		set_fs(KERNEL_DS);
+#endif
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 1, 0))
 		err = sock_sendmsg(sock, &msg);
 #else
 		err = sock_sendmsg(sock, &msg, sizeof(req));
 #endif
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 10, 0))
 		set_fs(oldfs);
+#endif
 
 		if (err > 0)
 			goto restart;
@@ -4508,17 +4563,13 @@ void rtw_dev_unload(PADAPTER padapter)
 
 		rtw_intf_stop(padapter);
 
-		#ifdef CONFIG_AUTOSUSPEND
-		if (!pwrctl->bInternalAutoSuspend)
-		#endif
-		{
-			rtw_stop_drv_threads(padapter);
+		rtw_stop_drv_threads(padapter);
 
-			if (ATOMIC_READ(&(pcmdpriv->cmdthd_running)) == _TRUE) {
-				RTW_ERR("cmd_thread not stop !!\n");
-				rtw_warn_on(1);
-			}
+		if (ATOMIC_READ(&(pcmdpriv->cmdthd_running)) == _TRUE) {
+			RTW_ERR("cmd_thread not stop !!\n");
+			rtw_warn_on(1);
 		}
+
 		/* check the status of IPS */
 		if (rtw_hal_check_ips_status(padapter) == _TRUE || pwrctl->rf_pwrstate == rf_off) { /* check HW status and SW state */
 			RTW_PRINT("%s: driver in IPS-FWLPS\n", __func__);
@@ -4563,7 +4614,7 @@ int rtw_suspend_free_assoc_resource(_adapter *padapter)
 
 	if (rtw_chk_roam_flags(padapter, RTW_ROAM_ON_RESUME)) {
 		if (check_fwstate(pmlmepriv, WIFI_STATION_STATE)
-			&& check_fwstate(pmlmepriv, _FW_LINKED)
+			&& check_fwstate(pmlmepriv, WIFI_ASOC_STATE)
 			#ifdef CONFIG_P2P
 			&& (rtw_p2p_chk_state(pwdinfo, P2P_STATE_NONE)
 				#if defined(CONFIG_IOCTL_CFG80211) && RTW_P2P_GROUP_INTERFACE
@@ -4581,7 +4632,7 @@ int rtw_suspend_free_assoc_resource(_adapter *padapter)
 		}
 	}
 
-	if (check_fwstate(pmlmepriv, WIFI_STATION_STATE) && check_fwstate(pmlmepriv, _FW_LINKED)) {
+	if (check_fwstate(pmlmepriv, WIFI_STATION_STATE) && check_fwstate(pmlmepriv, WIFI_ASOC_STATE)) {
 		rtw_disassoc_cmd(padapter, 0, RTW_CMDF_DIRECTLY);
 		/* s2-2.  indicate disconnect to os */
 		rtw_indicate_disconnect(padapter, 0, _FALSE);
@@ -4595,18 +4646,15 @@ int rtw_suspend_free_assoc_resource(_adapter *padapter)
 	rtw_free_assoc_resources(padapter, _TRUE);
 
 	/* s2-4. */
-#ifdef CONFIG_AUTOSUSPEND
-	if (is_primary_adapter(padapter) && (!adapter_to_pwrctl(padapter)->bInternalAutoSuspend))
-#endif
-		rtw_free_network_queue(padapter, _TRUE);
+	rtw_free_network_queue(padapter, _TRUE);
 
-	if (check_fwstate(pmlmepriv, _FW_UNDER_SURVEY)) {
+	if (check_fwstate(pmlmepriv, WIFI_UNDER_SURVEY)) {
 		RTW_PRINT("%s: fw_under_survey\n", __func__);
 		rtw_indicate_scan_done(padapter, 1);
-		clr_fwstate(pmlmepriv, _FW_UNDER_SURVEY);
+		clr_fwstate(pmlmepriv, WIFI_UNDER_SURVEY);
 	}
 
-	if (check_fwstate(pmlmepriv, _FW_UNDER_LINKING) == _TRUE) {
+	if (check_fwstate(pmlmepriv, WIFI_UNDER_LINKING) == _TRUE) {
 		RTW_PRINT("%s: fw_under_linking\n", __FUNCTION__);
 		rtw_indicate_disconnect(padapter, 0, _FALSE);
 	}
@@ -4625,6 +4673,7 @@ int rtw_suspend_wow(_adapter *padapter)
 	int ret = _SUCCESS;
 
 	RTW_INFO("==> "FUNC_ADPT_FMT" entry....\n", FUNC_ADPT_ARG(padapter));
+
 
 	RTW_INFO("wowlan_mode: %d\n", pwrpriv->wowlan_mode);
 	RTW_INFO("wowlan_pno_enable: %d\n", pwrpriv->wowlan_pno_enable);
@@ -4678,7 +4727,7 @@ int rtw_suspend_wow(_adapter *padapter)
 		rtw_hal_set_hwreg(padapter, HW_VAR_WOWLAN, (u8 *)&poidparam);
 		if (rtw_chk_roam_flags(padapter, RTW_ROAM_ON_RESUME)) {
 			if (check_fwstate(pmlmepriv, WIFI_STATION_STATE)
-			    && check_fwstate(pmlmepriv, _FW_LINKED)) {
+			    && check_fwstate(pmlmepriv, WIFI_ASOC_STATE)) {
 				RTW_INFO("%s %s(" MAC_FMT "), length:%d assoc_ssid.length:%d\n", __FUNCTION__,
 					pmlmepriv->cur_network.network.Ssid.Ssid,
 					MAC_ARG(pmlmepriv->cur_network.network.MacAddress),
@@ -4691,10 +4740,10 @@ int rtw_suspend_wow(_adapter *padapter)
 
 		RTW_PRINT("%s: wowmode suspending\n", __func__);
 
-		if (check_fwstate(pmlmepriv, _FW_UNDER_SURVEY) == _TRUE) {
+		if (check_fwstate(pmlmepriv, WIFI_UNDER_SURVEY) == _TRUE) {
 			RTW_PRINT("%s: fw_under_survey\n", __func__);
 			rtw_indicate_scan_done(padapter, 1);
-			clr_fwstate(pmlmepriv, _FW_UNDER_SURVEY);
+			clr_fwstate(pmlmepriv, WIFI_UNDER_SURVEY);
 		}
 
 #if 1
@@ -4842,6 +4891,7 @@ int rtw_suspend_ap_wow(_adapter *padapter)
 }
 #endif /* #ifdef CONFIG_AP_WOWLAN */
 
+
 int rtw_suspend_normal(_adapter *padapter)
 {
 	int ret = _SUCCESS;
@@ -4860,6 +4910,7 @@ int rtw_suspend_normal(_adapter *padapter)
 	if ((rtw_hal_check_ips_status(padapter) == _TRUE)
 	    || (adapter_to_pwrctl(padapter)->rf_pwrstate == rf_off))
 		RTW_PRINT("%s: ### ERROR #### driver in IPS ####ERROR###!!!\n", __FUNCTION__);
+
 
 #ifdef CONFIG_CONCURRENT_MODE
 	rtw_set_drv_stopped(padapter);	/*for stop thread*/
@@ -4887,6 +4938,7 @@ int rtw_suspend_common(_adapter *padapter)
 	struct pwrctrl_priv *pwrpriv = dvobj_to_pwrctl(dvobj);
 #ifdef CONFIG_WOWLAN
 	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
+	struct registry_priv *registry_par = &padapter->registrypriv;
 #endif
 
 	int ret = 0;
@@ -4919,6 +4971,7 @@ int rtw_suspend_common(_adapter *padapter)
 		pdbgpriv->dbg_suspend_error_cnt++;
 		goto exit;
 	}
+	rtw_mi_scan_abort(padapter, _TRUE);
 	rtw_ps_deny(padapter, PS_DENY_SUSPEND);
 
 	rtw_mi_cancel_all_timer(padapter);
@@ -4928,7 +4981,9 @@ int rtw_suspend_common(_adapter *padapter)
 
 	if (rtw_mi_check_status(padapter, MI_AP_MODE) == _FALSE) {
 #ifdef CONFIG_WOWLAN
-		if (check_fwstate(pmlmepriv, _FW_LINKED) || WOWLAN_IS_STA_MIX_MODE(padapter))
+		if (WOWLAN_IS_STA_MIX_MODE(padapter))
+			pwrpriv->wowlan_mode = _TRUE;
+		else if ( registry_par->wowlan_enable && check_fwstate(pmlmepriv, WIFI_ASOC_STATE))
 			pwrpriv->wowlan_mode = _TRUE;
 		else if (pwrpriv->wowlan_pno_enable == _TRUE)
 			pwrpriv->wowlan_mode |= pwrpriv->wowlan_pno_enable;
@@ -4952,6 +5007,7 @@ int rtw_suspend_common(_adapter *padapter)
 		rtw_suspend_normal(padapter);
 #endif /*CONFIG_AP_WOWLAN*/
 	}
+
 
 	RTW_PRINT("rtw suspend success in %d ms\n",
 		  rtw_get_passing_time_ms(start_time));
@@ -5039,6 +5095,7 @@ int rtw_resume_process_wow(_adapter *padapter)
 		if (psta)
 			set_sta_rate(padapter, psta);
 
+
 		rtw_clr_drv_stopped(padapter);
 		RTW_INFO("%s: wowmode resuming, DriverStopped:%s\n", __func__, rtw_is_drv_stopped(padapter) ? "True" : "False");
 
@@ -5046,7 +5103,7 @@ int rtw_resume_process_wow(_adapter *padapter)
 
 		rtw_mi_intf_start(padapter);
 
-		if(registry_par->suspend_type == FW_IPS_DISABLE_BBRF && !check_fwstate(pmlmepriv, _FW_LINKED)) {
+		if(registry_par->suspend_type == FW_IPS_DISABLE_BBRF && !check_fwstate(pmlmepriv, WIFI_ASOC_STATE)) {
 			if (!rtw_is_surprise_removed(padapter)) {
 				rtw_hal_deinit(padapter);
 				rtw_hal_init(padapter);
@@ -5149,6 +5206,7 @@ int rtw_resume_process_ap_wow(_adapter *padapter)
 		goto exit;
 	}
 
+
 #ifdef CONFIG_LPS
 	if(pwrpriv->wowlan_power_mgmt != PS_MODE_ACTIVE) {
 		rtw_set_ps_mode(padapter, PS_MODE_ACTIVE, 0, 0, "AP-WOWLAN");
@@ -5205,7 +5263,7 @@ int rtw_resume_process_ap_wow(_adapter *padapter)
 		for (i = 0; i < dvobj->iface_nums; i++) {
 			iface = dvobj->padapters[i];
 			if ((iface) && rtw_is_adapter_up(iface)) {
-				if (check_fwstate(&iface->mlmepriv, WIFI_AP_STATE | WIFI_MESH_STATE | _FW_LINKED))
+				if (check_fwstate(&iface->mlmepriv, WIFI_AP_STATE | WIFI_MESH_STATE | WIFI_ASOC_STATE))
 					rtw_reset_drv_sw(iface);
 			}
 		}
@@ -5387,6 +5445,7 @@ int rtw_resume_common(_adapter *padapter)
 
 	RTW_PRINT("%s:%d in %d ms\n", __FUNCTION__ , ret,
 		  rtw_get_passing_time_ms(start_time));
+
 
 	return ret;
 }

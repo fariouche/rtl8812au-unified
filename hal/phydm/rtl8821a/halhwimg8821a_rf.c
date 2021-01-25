@@ -54,14 +54,18 @@ check_positive(
 			 (dm->type_apa & 0xFF00)  << 16;
 
 	PHYDM_DBG(dm, ODM_COMP_INIT,
-		"===> check_positive (cond1, cond2, cond3, cond4) = (0x%X 0x%X 0x%X 0x%X)\n", cond1, cond2, cond3, cond4);
+		  "===> %s (cond1, cond2, cond3, cond4) = (0x%X 0x%X 0x%X 0x%X)\n",
+		  __func__, cond1, cond2, cond3, cond4);
 	PHYDM_DBG(dm, ODM_COMP_INIT,
-		"===> check_positive (driver1, driver2, driver3, driver4) = (0x%X 0x%X 0x%X 0x%X)\n", driver1, driver2, driver3, driver4);
+		  "===> %s (driver1, driver2, driver3, driver4) = (0x%X 0x%X 0x%X 0x%X)\n",
+		  __func__, driver1, driver2, driver3, driver4);
 
 	PHYDM_DBG(dm, ODM_COMP_INIT,
-		"	(Platform, Interface) = (0x%X, 0x%X)\n", dm->support_platform, dm->support_interface);
+		  "	(Platform, Interface) = (0x%X, 0x%X)\n",
+		  dm->support_platform, dm->support_interface);
 	PHYDM_DBG(dm, ODM_COMP_INIT,
-		"	(Board, Package) = (0x%X, 0x%X)\n", dm->board_type, dm->package_type);
+		  "	(Board, Package) = (0x%X, 0x%X)\n", dm->board_type,
+		  dm->package_type);
 
 
 	/*============== value Defined Check ===============*/
@@ -100,18 +104,6 @@ check_positive(
 	} else
 		return false;
 }
-
-/*
-static boolean
-check_negative(
-	struct dm_struct     *dm,
-	const u32  condition1,
-	const u32  condition2
-)
-{
-	return true;
-}
-*/
 
 /******************************************************************************
 *                           RadioA.TXT
@@ -890,9 +882,7 @@ u32 array_mp_8821a_radioa[] = {
 };
 
 void
-odm_read_and_config_mp_8821a_radioa(
-	struct dm_struct  *dm
-)
+odm_read_and_config_mp_8821a_radioa(struct dm_struct *dm)
 {
 	u32     i         = 0;
 	u8     c_cond;
@@ -902,7 +892,7 @@ odm_read_and_config_mp_8821a_radioa(
 
 	u32	v1 = 0, v2 = 0, pre_v1 = 0, pre_v2 = 0;
 
-	PHYDM_DBG(dm, ODM_COMP_INIT, "===> odm_read_and_config_mp_8821a_radioa\n");
+	PHYDM_DBG(dm, ODM_COMP_INIT, "===> %s\n", __func__);
 
 	while ((i + 1) < array_len) {
 		v1 = array[i];
@@ -985,9 +975,7 @@ u8 g_delta_swing_table_idx_mp_2g_cck_a_p_txpowertrack_ap_8821a[] = {0, 0, 1, 1, 
 #endif
 
 void
-odm_read_and_config_mp_8821a_txpowertrack_ap(
-	struct dm_struct  *dm
-)
+odm_read_and_config_mp_8821a_txpowertrack_ap(struct dm_struct *dm)
 {
 #if (DM_ODM_SUPPORT_TYPE & (ODM_AP))
 	struct dm_rf_calibration_struct  *cali_info = &(dm->rf_calibrate_info);
@@ -1048,9 +1036,7 @@ u8 g_delta_swing_table_idx_mp_2g_cck_a_p_txpowertrack_pcie_8821a[] = {0, 0, 1, 1
 #endif
 
 void
-odm_read_and_config_mp_8821a_txpowertrack_pcie(
-	struct dm_struct  *dm
-)
+odm_read_and_config_mp_8821a_txpowertrack_pcie(struct dm_struct *dm)
 {
 #if DEV_BUS_TYPE == RT_PCI_INTERFACE
 	struct dm_rf_calibration_struct  *cali_info = &(dm->rf_calibrate_info);
@@ -1111,9 +1097,7 @@ u8 g_delta_swing_table_idx_mp_2g_cck_a_p_txpowertrack_sdio_8821a[] = {0, 0, 1, 1
 #endif
 
 void
-odm_read_and_config_mp_8821a_txpowertrack_sdio(
-	struct dm_struct  *dm
-)
+odm_read_and_config_mp_8821a_txpowertrack_sdio(struct dm_struct *dm)
 {
 #if DEV_BUS_TYPE == RT_SDIO_INTERFACE
 	struct dm_rf_calibration_struct  *cali_info = &(dm->rf_calibrate_info);
@@ -1174,9 +1158,7 @@ u8 g_delta_swing_table_idx_mp_2g_cck_a_p_txpowertrack_usb_8821a[] = {0, 0, 1, 1,
 #endif
 
 void
-odm_read_and_config_mp_8821a_txpowertrack_usb(
-	struct dm_struct  *dm
-)
+odm_read_and_config_mp_8821a_txpowertrack_usb(struct dm_struct *dm)
 {
 #if DEV_BUS_TYPE == RT_USB_INTERFACE
 	struct dm_rf_calibration_struct  *cali_info = &(dm->rf_calibrate_info);
@@ -1773,9 +1755,7 @@ const char *array_mp_8821a_txpwr_lmt_8811au_fem[] = {
 };
 
 void
-odm_read_and_config_mp_8821a_txpwr_lmt_8811a_u_fem(
-	struct dm_struct  *dm
-)
+odm_read_and_config_mp_8821a_txpwr_lmt_8811a_u_fem(struct dm_struct *dm)
 {
 	u32     i           = 0;
 	u32     array_len    = sizeof(array_mp_8821a_txpwr_lmt_8811au_fem) / sizeof(u8 *);
@@ -1789,7 +1769,7 @@ odm_read_and_config_mp_8821a_txpwr_lmt_8811a_u_fem(
 	hal_data->nLinesReadPwrLmt = array_len / 7;
 #endif
 
-	PHYDM_DBG(dm, ODM_COMP_INIT, "===> odm_read_and_config_mp_8821a_txpwr_lmt_8811a_u_fem\n");
+	PHYDM_DBG(dm, ODM_COMP_INIT, "===> %s\n", __func__);
 
 	for (i = 0; i < array_len; i += 7) {
 		u8 *regulation = array[i];
@@ -1806,7 +1786,6 @@ odm_read_and_config_mp_8821a_txpwr_lmt_8811a_u_fem(
 			 regulation, band, bandwidth, rate, rf_path, chnl, val);
 #endif
 	}
-
 }
 
 /******************************************************************************
@@ -2381,9 +2360,7 @@ const char *array_mp_8821a_txpwr_lmt_8811au_ipa[] = {
 };
 
 void
-odm_read_and_config_mp_8821a_txpwr_lmt_8811a_u_ipa(
-	struct dm_struct  *dm
-)
+odm_read_and_config_mp_8821a_txpwr_lmt_8811a_u_ipa(struct dm_struct *dm)
 {
 	u32     i           = 0;
 	u32     array_len    = sizeof(array_mp_8821a_txpwr_lmt_8811au_ipa) / sizeof(u8 *);
@@ -2397,7 +2374,7 @@ odm_read_and_config_mp_8821a_txpwr_lmt_8811a_u_ipa(
 	hal_data->nLinesReadPwrLmt = array_len / 7;
 #endif
 
-	PHYDM_DBG(dm, ODM_COMP_INIT, "===> odm_read_and_config_mp_8821a_txpwr_lmt_8811a_u_ipa\n");
+	PHYDM_DBG(dm, ODM_COMP_INIT, "===> %s\n", __func__);
 
 	for (i = 0; i < array_len; i += 7) {
 		u8 *regulation = array[i];
@@ -2414,7 +2391,6 @@ odm_read_and_config_mp_8821a_txpwr_lmt_8811a_u_ipa(
 			 regulation, band, bandwidth, rate, rf_path, chnl, val);
 #endif
 	}
-
 }
 
 /******************************************************************************
@@ -2989,9 +2965,7 @@ const char *array_mp_8821a_txpwr_lmt_8821a[] = {
 };
 
 void
-odm_read_and_config_mp_8821a_txpwr_lmt_8821a(
-	struct dm_struct  *dm
-)
+odm_read_and_config_mp_8821a_txpwr_lmt_8821a(struct dm_struct *dm)
 {
 	u32     i           = 0;
 	u32     array_len    = sizeof(array_mp_8821a_txpwr_lmt_8821a) / sizeof(u8 *);
@@ -3005,7 +2979,7 @@ odm_read_and_config_mp_8821a_txpwr_lmt_8821a(
 	hal_data->nLinesReadPwrLmt = array_len / 7;
 #endif
 
-	PHYDM_DBG(dm, ODM_COMP_INIT, "===> odm_read_and_config_mp_8821a_txpwr_lmt_8821a\n");
+	PHYDM_DBG(dm, ODM_COMP_INIT, "===> %s\n", __func__);
 
 	for (i = 0; i < array_len; i += 7) {
 		u8 *regulation = array[i];
@@ -3022,7 +2996,6 @@ odm_read_and_config_mp_8821a_txpwr_lmt_8821a(
 			 regulation, band, bandwidth, rate, rf_path, chnl, val);
 #endif
 	}
-
 }
 
 /******************************************************************************
@@ -3597,9 +3570,7 @@ const char *array_mp_8821a_txpwr_lmt_8821a_e202sa[] = {
 };
 
 void
-odm_read_and_config_mp_8821a_txpwr_lmt_8821a_e202sa(
-	struct dm_struct  *dm
-)
+odm_read_and_config_mp_8821a_txpwr_lmt_8821a_e202sa(struct dm_struct *dm)
 {
 	u32     i           = 0;
 	u32     array_len    = sizeof(array_mp_8821a_txpwr_lmt_8821a_e202sa) / sizeof(u8 *);
@@ -3613,7 +3584,7 @@ odm_read_and_config_mp_8821a_txpwr_lmt_8821a_e202sa(
 	hal_data->nLinesReadPwrLmt = array_len / 7;
 #endif
 
-	PHYDM_DBG(dm, ODM_COMP_INIT, "===> odm_read_and_config_mp_8821a_txpwr_lmt_8821a_e202sa\n");
+	PHYDM_DBG(dm, ODM_COMP_INIT, "===> %s\n", __func__);
 
 	for (i = 0; i < array_len; i += 7) {
 		u8 *regulation = array[i];
@@ -3630,7 +3601,6 @@ odm_read_and_config_mp_8821a_txpwr_lmt_8821a_e202sa(
 			 regulation, band, bandwidth, rate, rf_path, chnl, val);
 #endif
 	}
-
 }
 
 /******************************************************************************
@@ -4205,9 +4175,7 @@ const char *array_mp_8821a_txpwr_lmt_8821a_sar_13dbm[] = {
 };
 
 void
-odm_read_and_config_mp_8821a_txpwr_lmt_8821a_sar_13_dbm(
-	struct dm_struct  *dm
-)
+odm_read_and_config_mp_8821a_txpwr_lmt_8821a_sar_13_dbm(struct dm_struct *dm)
 {
 	u32     i           = 0;
 	u32     array_len    = sizeof(array_mp_8821a_txpwr_lmt_8821a_sar_13dbm) / sizeof(u8 *);
@@ -4221,7 +4189,7 @@ odm_read_and_config_mp_8821a_txpwr_lmt_8821a_sar_13_dbm(
 	hal_data->nLinesReadPwrLmt = array_len / 7;
 #endif
 
-	PHYDM_DBG(dm, ODM_COMP_INIT, "===> odm_read_and_config_mp_8821a_txpwr_lmt_8821a_sar_13_dbm\n");
+	PHYDM_DBG(dm, ODM_COMP_INIT, "===> %s\n", __func__);
 
 	for (i = 0; i < array_len; i += 7) {
 		u8 *regulation = array[i];
@@ -4238,7 +4206,6 @@ odm_read_and_config_mp_8821a_txpwr_lmt_8821a_sar_13_dbm(
 			 regulation, band, bandwidth, rate, rf_path, chnl, val);
 #endif
 	}
-
 }
 
 /******************************************************************************
@@ -4813,9 +4780,7 @@ const char *array_mp_8821a_txpwr_lmt_8821a_sar_5mm[] = {
 };
 
 void
-odm_read_and_config_mp_8821a_txpwr_lmt_8821a_sar_5mm(
-	struct dm_struct  *dm
-)
+odm_read_and_config_mp_8821a_txpwr_lmt_8821a_sar_5mm(struct dm_struct *dm)
 {
 	u32     i           = 0;
 	u32     array_len    = sizeof(array_mp_8821a_txpwr_lmt_8821a_sar_5mm) / sizeof(u8 *);
@@ -4829,7 +4794,7 @@ odm_read_and_config_mp_8821a_txpwr_lmt_8821a_sar_5mm(
 	hal_data->nLinesReadPwrLmt = array_len / 7;
 #endif
 
-	PHYDM_DBG(dm, ODM_COMP_INIT, "===> odm_read_and_config_mp_8821a_txpwr_lmt_8821a_sar_5mm\n");
+	PHYDM_DBG(dm, ODM_COMP_INIT, "===> %s\n", __func__);
 
 	for (i = 0; i < array_len; i += 7) {
 		u8 *regulation = array[i];
@@ -4846,7 +4811,6 @@ odm_read_and_config_mp_8821a_txpwr_lmt_8821a_sar_5mm(
 			 regulation, band, bandwidth, rate, rf_path, chnl, val);
 #endif
 	}
-
 }
 
 /******************************************************************************
@@ -5421,9 +5385,7 @@ const char *array_mp_8821a_txpwr_lmt_8821a_sar_8mm[] = {
 };
 
 void
-odm_read_and_config_mp_8821a_txpwr_lmt_8821a_sar_8mm(
-	struct dm_struct  *dm
-)
+odm_read_and_config_mp_8821a_txpwr_lmt_8821a_sar_8mm(struct dm_struct *dm)
 {
 	u32     i           = 0;
 	u32     array_len    = sizeof(array_mp_8821a_txpwr_lmt_8821a_sar_8mm) / sizeof(u8 *);
@@ -5437,7 +5399,7 @@ odm_read_and_config_mp_8821a_txpwr_lmt_8821a_sar_8mm(
 	hal_data->nLinesReadPwrLmt = array_len / 7;
 #endif
 
-	PHYDM_DBG(dm, ODM_COMP_INIT, "===> odm_read_and_config_mp_8821a_txpwr_lmt_8821a_sar_8mm\n");
+	PHYDM_DBG(dm, ODM_COMP_INIT, "===> %s\n", __func__);
 
 	for (i = 0; i < array_len; i += 7) {
 		u8 *regulation = array[i];
@@ -5454,7 +5416,6 @@ odm_read_and_config_mp_8821a_txpwr_lmt_8821a_sar_8mm(
 			 regulation, band, bandwidth, rate, rf_path, chnl, val);
 #endif
 	}
-
 }
 
 #endif /* end of HWIMG_SUPPORT*/

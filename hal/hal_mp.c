@@ -471,7 +471,9 @@ mpt_SetTxPower(
 			MGN_MCS25, MGN_MCS26, MGN_MCS27, MGN_MCS28, MGN_MCS29,
 			MGN_MCS30, MGN_MCS31,
 		};
-		if (pHalData->rf_type == RF_3T3R)
+		if (pHalData->rf_type == RF_4T4R)
+			MaxRate = MGN_MCS31;
+		else if (pHalData->rf_type == RF_3T3R)
 			MaxRate = MGN_MCS23;
 		else if (pHalData->rf_type == RF_2T2R)
 			MaxRate = MGN_MCS15;
@@ -497,7 +499,9 @@ mpt_SetTxPower(
 			MGN_VHT4SS_MCS0, MGN_VHT4SS_MCS1, MGN_VHT4SS_MCS2, MGN_VHT4SS_MCS3, MGN_VHT4SS_MCS4,
 			MGN_VHT4SS_MCS5, MGN_VHT4SS_MCS6, MGN_VHT4SS_MCS7, MGN_VHT4SS_MCS8, MGN_VHT4SS_MCS9,
 		};
-		if (pHalData->rf_type == RF_3T3R)
+		if (pHalData->rf_type == RF_4T4R)
+			MaxRate = MGN_VHT4SS_MCS9;
+		else if (pHalData->rf_type == RF_3T3R)
 			MaxRate = MGN_VHT3SS_MCS9;
 		else if (pHalData->rf_type == RF_2T2R || pHalData->rf_type == RF_2T4R)
 			MaxRate = MGN_VHT2SS_MCS9;
@@ -854,8 +858,9 @@ void mpt_SetRFPath_8814A(PADAPTER	pAdapter)
 
 	mpt_ToggleIG_8814A(pAdapter);
 }
+
 #endif /* CONFIG_RTL8814A */
-#if defined(CONFIG_RTL8814A) || defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C)  || defined(CONFIG_RTL8822C)
+#if defined(CONFIG_RTL8814A) || defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C)  || defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8814B)
 void
 mpt_SetSingleTone_8814A(
 		PADAPTER	pAdapter,
@@ -950,8 +955,16 @@ mpt_SetSingleTone_8814A(
 
 		phy_set_bb_reg(pAdapter, rCCAonSec_Jaguar, BIT1, 0x0); /* Enable CCA*/
 
-		if (bEnPMacTx == FALSE)
-			hal_mpt_SetContinuousTx(pAdapter, _FALSE);
+		if (bEnPMacTx == FALSE) {
+			if(IS_HARDWARE_TYPE_JAGUAR3(pAdapter)) {
+#ifdef	PHYDM_MP_SUPPORT
+					phydm_stop_ofdm_cont_tx(pAdapter);
+					pMptCtx->bCckContTx = FALSE;
+					pMptCtx->bOfdmContTx = FALSE;
+#endif
+			} else
+					hal_mpt_SetContinuousTx(pAdapter, _FALSE);
+		}
 
 		phy_set_bb_reg(pAdapter, rA_TxScale_Jaguar, bMaskDWord, regIG0); /* 0xC1C[31:21]*/
 		phy_set_bb_reg(pAdapter, rB_TxScale_Jaguar, bMaskDWord, regIG1); /* 0xE1C[31:21]*/
@@ -1588,12 +1601,7 @@ s32 hal_mpt_SetThermalMeter(PADAPTER pAdapter, u8 target_ther)
 		return _FAIL;
 	}
 
-
 	target_ther &= 0xff;
-	if (target_ther < 0x07)
-		target_ther = 0x07;
-	else if (target_ther > 0x1d)
-		target_ther = 0x1d;
 
 	pHalData->eeprom_thermal_meter = target_ther;
 
@@ -1717,6 +1725,21 @@ void hal_mpt_SetSingleToneTx(PADAPTER pAdapter, u8 bStart)
 
 	if (IS_HARDWARE_TYPE_JAGUAR3(pAdapter)) {
 #ifdef	PHYDM_MP_SUPPORT
+#ifdef CONFIG_RTL8814B
+		if(pHalData->current_channel_bw == CHANNEL_WIDTH_80_80)
+		{
+			/* @Tx mode: RF0x00[19:16]=4'b0010 */
+			config_phydm_write_rf_syn_8814b(pDM_Odm, RF_SYN0, RF_0x0, 0xF0000, 0x2);
+			/* @Lowest RF gain index: RF_0x0[4:0] = 0*/
+			config_phydm_write_rf_syn_8814b(pDM_Odm, RF_SYN0, RF_0x0, 0x1F, 0x0);
+			/* @RF LO enabled */
+			config_phydm_write_rf_syn_8814b(pDM_Odm, RF_SYN0, RF_0x58, BIT(1), 0x1);
+			/* @SYN1 */
+			config_phydm_write_rf_syn_8814b(pDM_Odm, RF_SYN1, RF_0x0, 0xF0000, 0x2);
+			config_phydm_write_rf_syn_8814b(pDM_Odm, RF_SYN1, RF_0x0, 0x1F, 0x0);
+			config_phydm_write_rf_syn_8814b(pDM_Odm, RF_SYN1, RF_0x58, BIT(1), 0x1);
+		}
+#endif
 		phydm_mp_set_single_tone(pDM_Odm, bStart, pMptCtx->mpt_rf_path);
 #endif
 		return;
@@ -2085,9 +2108,9 @@ static	void mpt_StopCckContTx(
 	phy_set_bb_reg(pAdapter, rFPGA0_XB_HSSIParameter1, bMaskDWord, 0x01000100);
 	}
 
-	if (IS_HARDWARE_TYPE_8188E(pAdapter) || IS_HARDWARE_TYPE_8723B(pAdapter) || 
-		IS_HARDWARE_TYPE_8703B(pAdapter) || IS_HARDWARE_TYPE_8188F(pAdapter) || 
-		IS_HARDWARE_TYPE_8723D(pAdapter) || IS_HARDWARE_TYPE_8192F(pAdapter) || 
+	if (IS_HARDWARE_TYPE_8188E(pAdapter) || IS_HARDWARE_TYPE_8723B(pAdapter) ||
+		IS_HARDWARE_TYPE_8703B(pAdapter) || IS_HARDWARE_TYPE_8188F(pAdapter) ||
+		IS_HARDWARE_TYPE_8723D(pAdapter) || IS_HARDWARE_TYPE_8192F(pAdapter) ||
 		IS_HARDWARE_TYPE_8821C(pAdapter) || IS_HARDWARE_TYPE_8188GTV(pAdapter)) {
 		phy_set_bb_reg(pAdapter, 0xA70, BIT(14), bDisable);/* patch Count CCK adjust Rate*/
 	}
@@ -2168,9 +2191,9 @@ static	void mpt_StartCckContTx(
 		phy_set_bb_reg(pAdapter, rFPGA0_XB_HSSIParameter1, bMaskDWord, 0x01000500);
 	}
 
-	if (IS_HARDWARE_TYPE_8188E(pAdapter) || IS_HARDWARE_TYPE_8723B(pAdapter) || 
-		IS_HARDWARE_TYPE_8703B(pAdapter) || IS_HARDWARE_TYPE_8188F(pAdapter) || 
-		IS_HARDWARE_TYPE_8723D(pAdapter) || IS_HARDWARE_TYPE_8192F(pAdapter) || 
+	if (IS_HARDWARE_TYPE_8188E(pAdapter) || IS_HARDWARE_TYPE_8723B(pAdapter) ||
+		IS_HARDWARE_TYPE_8703B(pAdapter) || IS_HARDWARE_TYPE_8188F(pAdapter) ||
+		IS_HARDWARE_TYPE_8723D(pAdapter) || IS_HARDWARE_TYPE_8192F(pAdapter) ||
 		IS_HARDWARE_TYPE_8821C(pAdapter) || IS_HARDWARE_TYPE_8188GTV(pAdapter)) {
 		if (pAdapter->mppriv.rateidx == MPT_RATE_1M) /* patch Count CCK adjust Rate*/
 			phy_set_bb_reg(pAdapter, 0xA70, BIT(14), bDisable);
@@ -2213,15 +2236,15 @@ static	void mpt_StartOfdmContTx(
 		phy_set_bb_reg(pAdapter, rOFDM1_LSTF, BIT30 | BIT29 | BIT28, OFDM_ContinuousTx);
 
 	if (!IS_HARDWARE_TYPE_JAGUAR_ALL(pAdapter)) {
-	phy_set_bb_reg(pAdapter, rFPGA0_XA_HSSIParameter1, bMaskDWord, 0x01000500);
-	phy_set_bb_reg(pAdapter, rFPGA0_XB_HSSIParameter1, bMaskDWord, 0x01000500);
+		phy_set_bb_reg(pAdapter, rFPGA0_XA_HSSIParameter1, bMaskDWord, 0x01000500);
+		phy_set_bb_reg(pAdapter, rFPGA0_XB_HSSIParameter1, bMaskDWord, 0x01000500);
 	}
 
 	pMptCtx->bCckContTx = FALSE;
 	pMptCtx->bOfdmContTx = TRUE;
 }	/* mpt_StartOfdmContTx */
 
-#if defined(CONFIG_RTL8814A) || defined(CONFIG_RTL8821B) || defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C)  || defined(CONFIG_RTL8822C)
+#if defined(CONFIG_RTL8814A) || defined(CONFIG_RTL8821B) || defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C)  || defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8814B)
 #ifdef PHYDM_PMAC_TX_SETTING_SUPPORT
 static void mpt_convert_phydm_txinfo_for_jaguar3(
 	RT_PMAC_TX_INFO	pMacTxInfo, struct phydm_pmac_info *phydmtxinfo)
@@ -2288,6 +2311,16 @@ void mpt_ProSetPMacTx(PADAPTER	Adapter)
 #ifdef PHYDM_PMAC_TX_SETTING_SUPPORT
 		struct phydm_pmac_info phydm_mactxinfo;
 
+		if (PMacTxInfo.bEnPMacTx == TRUE) {
+			pMptCtx->HWTxmode = PMacTxInfo.Mode;
+			pMptCtx->mpt_rate_index = PMacTxInfo.TX_RATE;
+			if (PMacTxInfo.Mode == CONTINUOUS_TX)
+				hal_mpt_SetTxPower(Adapter);
+		} else {
+			PMacTxInfo.Mode = pMptCtx->HWTxmode;
+			PMacTxInfo.TX_RATE = pMptCtx->mpt_rate_index;
+			pMptCtx->HWTxmode = TEST_NONE;
+		}
 		mpt_convert_phydm_txinfo_for_jaguar3(PMacTxInfo, &phydm_mactxinfo);
 		phydm_set_pmac_tx(p_dm_odm, &phydm_mactxinfo, pMptCtx->mpt_rf_path);
 #endif
@@ -2506,6 +2539,16 @@ void hal_mpt_SetContinuousTx(PADAPTER pAdapter, u8 bStart)
 		else
 			mpt_StopOfdmContTx(pAdapter);
 	}
+}
+
+void mpt_trigger_tssi_tracking(PADAPTER pAdapter, u8 rf_path)
+{
+#ifdef CONFIG_RTL8814B
+	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(pAdapter);
+	struct dm_struct		*pDM_Odm = &pHalData->odmpriv;
+
+	halrf_do_tssi_8814b(pDM_Odm, rf_path);
+#endif
 }
 
 #endif /* CONFIG_MP_INCLUDE*/

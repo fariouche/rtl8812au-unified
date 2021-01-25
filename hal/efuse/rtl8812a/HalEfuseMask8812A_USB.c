@@ -68,7 +68,7 @@ EFUSE_GetArrayLen_MP_8812A_MUSB(void)
 
 void
 EFUSE_GetMaskArray_MP_8812A_MUSB(
-	u8* Array
+		u8 *Array
 )
 {
 	u16 len = EFUSE_GetArrayLen_MP_8812A_MUSB(), i = 0;
@@ -76,9 +76,9 @@ EFUSE_GetMaskArray_MP_8812A_MUSB(
 	for (i = 0; i < len; ++i)
 		Array[i] = Array_MP_8812A_MUSB[i];
 }
-boolean
+BOOLEAN
 EFUSE_IsAddressMasked_MP_8812A_MUSB(
-	u16  Offset
+		u16 Offset
 )
 {
 	int r = Offset / 16;

@@ -38,6 +38,13 @@ u8 RSN_CIPHER_SUITE_WEP40[] = { 0x00, 0x0f, 0xac, 1 };
 u8 RSN_CIPHER_SUITE_TKIP[] = { 0x00, 0x0f, 0xac, 2 };
 u8 RSN_CIPHER_SUITE_WRAP[] = { 0x00, 0x0f, 0xac, 3 };
 u8 RSN_CIPHER_SUITE_CCMP[] = { 0x00, 0x0f, 0xac, 4 };
+u8 RSN_CIPHER_SUITE_AES_128_CMAC[] = { 0x00, 0x0f, 0xac, 6 };
+u8 RSN_CIPHER_SUITE_GCMP[] = { 0x00, 0x0f, 0xac, 8 };
+u8 RSN_CIPHER_SUITE_GCMP_256[] = { 0x00, 0x0f, 0xac, 9 };
+u8 RSN_CIPHER_SUITE_CCMP_256[] = { 0x00, 0x0f, 0xac, 10 };
+u8 RSN_CIPHER_SUITE_BIP_GMAC_128[] = { 0x00, 0x0f, 0xac, 11 };
+u8 RSN_CIPHER_SUITE_BIP_GMAC_256[] = { 0x00, 0x0f, 0xac, 12 };
+u8 RSN_CIPHER_SUITE_BIP_CMAC_256[] = { 0x00, 0x0f, 0xac, 13 };
 u8 RSN_CIPHER_SUITE_WEP104[] = { 0x00, 0x0f, 0xac, 5 };
 
 u8 WLAN_AKM_8021X[] = {0x00, 0x0f, 0xac, 1};
@@ -95,6 +102,34 @@ u8 mgn_rates_vht3ss[10] = {MGN_VHT3SS_MCS0, MGN_VHT3SS_MCS1, MGN_VHT3SS_MCS2, MG
 u8 mgn_rates_vht4ss[10] = {MGN_VHT4SS_MCS0, MGN_VHT4SS_MCS1, MGN_VHT4SS_MCS2, MGN_VHT4SS_MCS3, MGN_VHT4SS_MCS4
 	, MGN_VHT4SS_MCS5, MGN_VHT4SS_MCS6, MGN_VHT4SS_MCS7, MGN_VHT4SS_MCS8, MGN_VHT4SS_MCS9
 			  };
+
+RATE_SECTION mgn_rate_to_rs(enum MGN_RATE rate)
+{
+	RATE_SECTION rs = RATE_SECTION_NUM;
+
+	if (IS_CCK_RATE(rate))
+		rs = CCK;
+	else if (IS_OFDM_RATE(rate))
+		rs = OFDM;
+	else if (IS_HT1SS_RATE(rate))
+		rs = HT_1SS;
+	else if (IS_HT2SS_RATE(rate))
+		rs = HT_2SS;
+	else if (IS_HT3SS_RATE(rate))
+		rs = HT_3SS;
+	else if (IS_HT4SS_RATE(rate))
+		rs = HT_4SS;
+	else if (IS_VHT1SS_RATE(rate))
+		rs = VHT_1SS;
+	else if (IS_VHT2SS_RATE(rate))
+		rs = VHT_2SS;
+	else if (IS_VHT3SS_RATE(rate))
+		rs = VHT_3SS;
+	else if (IS_VHT4SS_RATE(rate))
+		rs = VHT_4SS;
+
+	return rs;
+}
 
 static const char *const _rate_section_str[] = {
 	"CCK",
@@ -464,7 +499,7 @@ void rtw_filter_suppport_rateie(WLAN_BSSID_EX *pbss_network, u8 keep)
 	_rtw_memmove(p+2+idx, remain_ies, remain_len);
 	pbss_network->IELength -= (ie_orilen - idx);
 }
- 
+
 
 /*
 	Adjust those items by given wireless_mode
@@ -678,7 +713,7 @@ int rtw_get_wpa_cipher_suite(u8 *s)
 	return 0;
 }
 
-int rtw_get_wpa2_cipher_suite(u8 *s)
+int rtw_get_rsn_cipher_suite(u8 *s)
 {
 	if (_rtw_memcmp(s, RSN_CIPHER_SUITE_NONE, RSN_SELECTOR_LEN) == _TRUE)
 		return WPA_CIPHER_NONE;
@@ -688,9 +723,22 @@ int rtw_get_wpa2_cipher_suite(u8 *s)
 		return WPA_CIPHER_TKIP;
 	if (_rtw_memcmp(s, RSN_CIPHER_SUITE_CCMP, RSN_SELECTOR_LEN) == _TRUE)
 		return WPA_CIPHER_CCMP;
+	if (_rtw_memcmp(s, RSN_CIPHER_SUITE_GCMP, RSN_SELECTOR_LEN) == _TRUE)
+		return WPA_CIPHER_GCMP;
+	if (_rtw_memcmp(s, RSN_CIPHER_SUITE_GCMP_256, RSN_SELECTOR_LEN) == _TRUE)
+		return WPA_CIPHER_GCMP_256;
+	if (_rtw_memcmp(s, RSN_CIPHER_SUITE_CCMP_256, RSN_SELECTOR_LEN) == _TRUE)
+		return WPA_CIPHER_CCMP_256;
 	if (_rtw_memcmp(s, RSN_CIPHER_SUITE_WEP104, RSN_SELECTOR_LEN) == _TRUE)
 		return WPA_CIPHER_WEP104;
-
+	if (_rtw_memcmp(s, RSN_CIPHER_SUITE_AES_128_CMAC, RSN_SELECTOR_LEN) == _TRUE)
+		return WPA_CIPHER_BIP_CMAC_128;
+	if (_rtw_memcmp(s, RSN_CIPHER_SUITE_BIP_GMAC_128, RSN_SELECTOR_LEN) == _TRUE)
+		return WPA_CIPHER_BIP_GMAC_128;
+	if (_rtw_memcmp(s, RSN_CIPHER_SUITE_BIP_GMAC_256, RSN_SELECTOR_LEN) == _TRUE)
+		return WPA_CIPHER_BIP_GMAC_256;
+	if (_rtw_memcmp(s, RSN_CIPHER_SUITE_BIP_CMAC_256, RSN_SELECTOR_LEN) == _TRUE)
+		return WPA_CIPHER_BIP_CMAC_256;
 	return 0;
 }
 
@@ -903,7 +951,7 @@ err:
 }
 
 int rtw_parse_wpa2_ie(u8 *rsn_ie, int rsn_ie_len, int *group_cipher,
-	int *pairwise_cipher, u32 *akm, u8 *mfp_opt)
+	int *pairwise_cipher, int *gmcs, u32 *akm, u8 *mfp_opt)
 {
 	struct rsne_info info;
 	int i, ret = _SUCCESS;
@@ -914,7 +962,7 @@ int rtw_parse_wpa2_ie(u8 *rsn_ie, int rsn_ie_len, int *group_cipher,
 
 	if (group_cipher) {
 		if (info.gcs)
-			*group_cipher = rtw_get_wpa2_cipher_suite(info.gcs);
+			*group_cipher = rtw_get_rsn_cipher_suite(info.gcs);
 		else
 			*group_cipher = 0;
 	}
@@ -922,7 +970,14 @@ int rtw_parse_wpa2_ie(u8 *rsn_ie, int rsn_ie_len, int *group_cipher,
 	if (pairwise_cipher) {
 		*pairwise_cipher = 0;
 		for (i = 0; i < info.pcs_cnt; i++)
-			*pairwise_cipher |= rtw_get_wpa2_cipher_suite(info.pcs_list + 4 * i);
+			*pairwise_cipher |= rtw_get_rsn_cipher_suite(info.pcs_list + 4 * i);
+	}
+
+	if (gmcs) {
+		if (info.gmcs)
+			*gmcs = rtw_get_rsn_cipher_suite(info.gmcs);
+		else
+			*gmcs = WPA_CIPHER_BIP_CMAC_128; /* default value when absent */
 	}
 
 	if (akm) {
@@ -1350,7 +1405,14 @@ static int rtw_ieee802_11_parse_vendor_specific(u8 *pos, uint elen,
 			return -1;
 		}
 		break;
-
+#ifdef CONFIG_RTW_TOKEN_BASED_XMIT
+	case OUI_REALTEK:
+		if (elen == 8) {  // TBTX capable IE length is 8
+			elems->tbtx_cap = pos;
+			elems->tbtx_cap_len = elen;
+		}
+		break;
+#endif
 	default:
 		RTW_DBG("unknown vendor specific information "
 			"element ignored (vendor OUI %02x:%02x:%02x "

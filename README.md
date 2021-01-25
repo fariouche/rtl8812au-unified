@@ -1,5 +1,7 @@
-## RTL8812AU/21AU and RTL8814AU drivers
-Only for use with Linux & Android
+## Realtek rtl8812au driver version 5.7.0
+
+Supports 8811AU/8812AU and 8821AU chipsets.
+Realtek RTL8814AU is not supported in this anymore!
 
 [![Monitor mode](https://img.shields.io/badge/monitor%20mode-working-brightgreen.svg)](#)
 [![Frame Injection](https://img.shields.io/badge/frame%20injection-working-brightgreen.svg)](#)
@@ -15,82 +17,11 @@ Only for use with Linux & Android
 [![Armbian](https://img.shields.io/badge/Armbian-supported-blue.svg)](https://www.armbian.com)
 [![ArchLinux](https://img.shields.io/badge/ArchLinux-supported-blue.svg)](https://img.shields.io/badge/ArchLinux-supported-blue.svg)
 [![aircrack-ng](https://img.shields.io/badge/aircrack--ng-supported-blue.svg)](https://github.com/aircrack-ng/aircrack-ng)
-[![wifite2](https://img.shields.io/badge/wifite2-supported-blue.svg)](https://github.com/derv82/wifite2)
+[![wifite2](https://img.shields.io/badge/wifite2-supported-blue.svg)](https://github.com/kimocoder/wifite2)
 
-
-### What's new?
-```
-* 8814au and 8821au has got a update, about time
-  it's a closer fit to the 8812au and it's code now.
-
-* AP mode had 30 sec. disconnect issue, that's fixed.
-* Fix some AUTOSUSPEND and EARLY_SUSPEND issues
-* Some cleanup of unused code.
-
-* Some other minors all over ..
-* The 8814au and 8821au is handling/performing netter now
- 
-```
-
-### IPERF3 benchmark
-<b>[Device]</b> Alfa Networks AWUS036ACH<br>
-<b>[Chipset]</b> 88XXau (rtl8812au)<br>
-<b>[Branch]</b> v5.6.4.1<br>
-<b>[Distance]</b> 10m free sight
-```
-[ ID] Interval           Transfer     Bitrate         Retr  Cwnd
-[  5]   0.00-1.00   sec  11.6 MBytes  97.4 Mbits/sec    0   96.2 KBytes
-[  5]   1.00-2.00   sec  11.2 MBytes  93.8 Mbits/sec    0    100 KBytes
-[  5]   2.00-3.00   sec  11.2 MBytes  93.8 Mbits/sec    0    100 KBytes
-[  5]   3.00-4.00   sec  11.2 MBytes  93.8 Mbits/sec    0    100 KBytes
-[  5]   4.00-5.00   sec  11.2 MBytes  93.8 Mbits/sec    0    100 KBytes
-[  5]   5.00-6.00   sec  11.4 MBytes  95.9 Mbits/sec    0    105 KBytes
-[  5]   6.00-7.00   sec  11.2 MBytes  93.8 Mbits/sec    0    105 KBytes
-[  5]   7.00-8.00   sec  11.3 MBytes  94.9 Mbits/sec    0    157 KBytes
-[  5]   8.00-9.00   sec  11.2 MBytes  93.8 Mbits/sec    0    157 KBytes
-[  5]   9.00-10.00  sec  11.2 MBytes  94.3 Mbits/sec    0    157 KBytes
-[  5]  10.00-11.00  sec  11.2 MBytes  93.8 Mbits/sec    0    157 KBytes
-[  5]  11.00-12.00  sec  11.2 MBytes  93.8 Mbits/sec    0    157 KBytes
-[  5]  12.00-13.00  sec  11.2 MBytes  94.4 Mbits/sec    0    157 KBytes
-[  5]  13.00-14.00  sec  11.2 MBytes  93.8 Mbits/sec    0    157 KBytes
-[  5]  14.00-15.00  sec  11.2 MBytes  94.4 Mbits/sec    0    157 KBytes
-[  5]  15.00-16.00  sec  10.9 MBytes  91.7 Mbits/sec    0    157 KBytes
-[  5]  16.00-17.00  sec  11.2 MBytes  94.4 Mbits/sec    0    157 KBytes
-[  5]  17.00-18.00  sec  11.2 MBytes  94.4 Mbits/sec    0    157 KBytes
-[  5]  18.00-19.00  sec  11.2 MBytes  94.4 Mbits/sec    0    157 KBytes
-[  5]  19.00-20.00  sec  11.2 MBytes  93.8 Mbits/sec    0    157 KBytes
-[  5]  20.00-21.00  sec  11.2 MBytes  93.8 Mbits/sec    0    157 KBytes
-[  5]  21.00-22.00  sec  11.2 MBytes  93.8 Mbits/sec    0    157 KBytes
-[  5]  22.00-23.00  sec  11.2 MBytes  93.8 Mbits/sec    0    157 KBytes
-- - - - - - - - - - - - - - - - - - - - - - - - -
-[ ID] Interval           Transfer     Bitrate         Retr
-[  5]   0.00-23.15  sec   260 MBytes  94.2 Mbits/sec    0             sender
-[  5]   0.00-23.15  sec  0.00 Bytes  0.00 bits/sec                  receiver
-```
-
-### DKMS
-This driver can be installed using [DKMS]. This is a system which will automatically recompile and install a kernel module when a new kernel gets installed or updated. To make use of DKMS, install the `dkms` package, which on Debian (based) systems is done like this:
-```
-$ sudo apt-get install dkms
-```
-
-### Installation of Driver
-In order to install the driver open a terminal in the directory with the source code and execute the following command:
-```
-$ sudo ./dkms-install.sh
-```
-
-### Removal of Driver
-In order to remove the driver from your system open a terminal in the directory with the source code and execute the following command:
-```
-$ sudo ./dkms-remove.sh
-```
-
-### Make
-For building & installing the driver with 'make' use
-```
-$ make && make install
-```
+Builds clean with no errors on kernels 5.4, 5.8, 5.9, 5.10.
+Fully tested on kernel 5.4 with no dmesg badness, wavemon working fine, good speeds etc.
+Partially tested on kernels 5.8, 5.9, 5.10 with no dmesg badness, and wavemon working fine.
 
 ### Notes
 Download
@@ -101,12 +32,12 @@ cd rtl*
 Package / Build dependencies (Kali)
 ```
 $ sudo apt-get update
-$ sudo apt-get install build-essential bc libelf-dev linux-headers-`uname -r`
+$ sudo apt-get install build-essential libelf-dev linux-headers-`uname -r`
 ```
 #### For Raspberry (RPI)
 
 ```
-$ sudo apt-get install bc raspberrypi-kernel-headers
+$ sudo apt-get install raspberrypi-kernel-headers
 ```
 
 Then run this step to change platform in Makefile, For RPI 1/2/3/ & 0/Zero:
@@ -119,12 +50,6 @@ But for RPI 3B+ & 4B you will need to run those below which builds the ARM64 arc
 ```
 $ sed -i 's/CONFIG_PLATFORM_I386_PC = y/CONFIG_PLATFORM_I386_PC = n/g' Makefile
 $ sed -i 's/CONFIG_PLATFORM_ARM64_RPI = n/CONFIG_PLATFORM_ARM64_RPI = y/g' Makefile
-```
-
-In addition, if you receive an error message about `unrecognized command line option ‘-mgeneral-regs-only’` (i.e., Raspbian Buster), you will need to run the following commands:
-```
-$ sed -i 's/^dkms build/ARCH=arm dkms build/' dkms-install.sh
-$ sed -i 's/^MAKE="/MAKE="ARCH=arm\ /' dkms.conf
 ```
 
 For setting monitor mode
@@ -150,22 +75,6 @@ For setting TX power
 ```
 $ sudo iw wlan0 set txpower fixed 3000
 ```
-#### For OpenWrt
-Build as OpenWrt package
-  1. Prepare toolchain, download OpenWrt SDK or full build system. *Additional steps might be needed to make the toolchain ready to use.
-  2. Edit `feeds.conf` if exists or `feeds.conf.default`, append `src-link localfeed $(FULLPATH_TO_THIS_REPO)/openwrt`.
-  3. Update feeds `./scripts/feeds update localfeed` or `./scripts/feeds update -a`.
-  4. Install package `./scripts/feeds install kmod-rtl8812au-ac`.
-  5. Update config `make menuconfig`, navigate to `Kernel Modules -> Wireless Drivers ->`, toggle `kmod-rtl8812au-ac` to `M` or `*`.
-  6. Make.
-
-Please be aware that this will build againt HEAD commit of current branch, not current working directory.
-
-Build as out-of-tree kernel module
-  1. Prepare toolchain.
-  2. Edit `Makefile` to fit your platform. Append `NOSTDINC_FLAGS` from `openwrt/rtl8812au-ac/Makefile` to `EXTRA_CFLAGS`.
-  3. Config environment variable. Add toolchain to `PATH`, set `STAGING_DIR`, etc.
-  4. Make.
 
 ### LED control
 
@@ -194,14 +103,14 @@ $ cat /proc/net/rtl8812au/$(your interface name)/led_ctrl
 0: doesn't switch, 1: switch from usb2.0 to usb 3.0 2: switch from usb3.0 to usb 2.0
 ```sh
 $ rmmod 88XXau
-$ modprobe 88XXau rtw_switch_usb_mode:int (0: no switch 1: switch from usb2 to usb3 2: switch from usb3 to usb2)
+$ modprobe 88XXau rtw_switch_usb_mode=int (0: no switch 1: switch from usb2 to usb3 2: switch from usb3 to usb2)
 ```
 
 ### NetworkManager
 
-Newer versions of NetworkManager switches to random MAC address. Some users would prefer to use a fixed address.
-Simply add these lines below
-```
+As others have noted, people using NetworkManager need to add this stanza to /etc/NetworkManager/NetworkManager.conf
+
+```sh
 [device]
 wifi.scan-rand-mac-address=no
 ```
@@ -213,8 +122,8 @@ $ sudo service NetworkManager restart
 ### Credits / Contributors
 
 ```
-Alfa Networks - https://www.alfa.com.tw/
-Realtek.      - https://www.realtek.com
+Realtek       - https://www.realtek.com.tw
+Alfa Networks - https://www.alfa.com.tw
 aircrack-ng   - https://www.aircrack-ng.org
 
 astsam        - https://github.com/astsam

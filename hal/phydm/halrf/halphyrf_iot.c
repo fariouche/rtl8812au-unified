@@ -559,7 +559,7 @@ odm_txpowertracking_callback_thermal_meter(
 	}
 #if (!RTL8721D_SUPPORT)
 	/* Wait sacn to do IQK by RF Jenyu*/
-	if ((!*dm->is_scan_in_process) && (!iqk_info->rfk_forbidden)) {
+	if ((!*dm->is_scan_in_process) && (!iqk_info->rfk_forbidden) && dm->is_linked) {
 		/*Delta temperature is equal to or larger than 20 centigrade (When threshold is 8).*/
 		if (delta_IQK >= c.threshold_iqk) {
 			cali_info->thermal_value_iqk = thermal_value;
@@ -637,7 +637,7 @@ void phydm_rf_init(void		*dm_void)
 	struct dm_struct	*dm = (struct dm_struct *)dm_void;
 
 	odm_txpowertracking_init(dm);
-	
+
 	odm_clear_txpowertracking_state(dm);
 }
 

@@ -40,7 +40,7 @@
 #endif
 
 #if (RTL8822C_SUPPORT)
-	/*#define PHYDM_PHYSTAUS_AUTO_SWITCH*/
+	#define PHYDM_PHYSTAUS_AUTO_SWITCH
 #endif
 
 /*#define PHYDM_TDMA_DIG_SUPPORT*/
@@ -128,11 +128,11 @@
 		/*#define	CONFIG_HL_SMART_ANTENNA_TYPE1*/
 		#define	CONFIG_FAT_PATCH
 	#endif
-	
+
 	#if (RTL8822B_SUPPORT)
 		/*#define CONFIG_HL_SMART_ANTENNA_TYPE2*/
 	#endif
-	
+
 	#if (defined(CONFIG_HL_SMART_ANTENNA_TYPE1) || defined(CONFIG_HL_SMART_ANTENNA_TYPE2))
 		#define	CONFIG_HL_SMART_ANTENNA
 	#endif

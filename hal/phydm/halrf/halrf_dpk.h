@@ -55,15 +55,22 @@ struct dm_dpk_info {
 	u16 dpk_path_ok;
 	/*@BIT(15)~BIT(12) : 5G reserved, BIT(11)~BIT(8) 5G_S3~5G_S0*/
 	/*@BIT(7)~BIT(4) : 2G reserved, BIT(3)~BIT(0) 2G_S3~2G_S0*/
-	u8	thermal_dpk[4];					/*path*/	
+	u8	thermal_dpk[4];					/*path*/
 	u8	thermal_dpk_avg[4][AVG_THERMAL_NUM_DPK];	/*path*/
-	u8	pre_pwsf[4];	
+	u8	pre_pwsf[4];
 	u8	thermal_dpk_avg_index;
 	u32	gnt_control;
 	u32	gnt_value;
 	u8	dpk_ch;
 	u8	dpk_band;
 	u8	dpk_bw;
+
+#if (RTL8822C_SUPPORT == 1 || RTL8812F_SUPPORT == 1 || RTL8197G_SUPPORT == 1)
+	u16	dc_i[2];			/*MDPD DC I path*/
+	u16	dc_q[2];			/*MDPD DC Q path*/
+	u8	corr_val[2];			/*Corr value path*/
+	u8	corr_idx[2];			/*Corr index path*/
+#endif
 
 #if (RTL8822C_SUPPORT == 1 || RTL8812F_SUPPORT == 1)
 	u8	result[2];			/*path*/
@@ -77,7 +84,7 @@ struct dm_dpk_info {
      RTL8814B_SUPPORT == 1 || RTL8197G_SUPPORT == 1)
 	/*2G DPK data*/
 	u8 	dpk_result[4][3];		/*path/group*/
-	u8 	pwsf_2g[4][3];			/*path/group*/	
+	u8 	pwsf_2g[4][3];			/*path/group*/
 	u32	lut_2g_even[4][3][64];		/*path/group/LUT data*/
 	u32	lut_2g_odd[4][3][64];		/*path/group/LUT data*/
 	s16	tmp_pas_i[32];			/*PAScan I data*/
@@ -121,5 +128,13 @@ struct dm_dpk_info {
 #endif
 
 };
+
+#if (RTL8822C_SUPPORT == 1)
+struct dm_dpk_c2h_report {
+	u8	path_ok[2];		/*path0_ok/path1_ok*/
+	u8	therm[2][2];		/*therm0_s0/therm0_s1/therm1_s0/therm1_s1*/
+	u8	therm_delta[2][2];	/*therm_delta0_s0/therm_delta0_s1/therm_delta1_s0/therm_delta1_s1*/
+};
+#endif
 
 #endif /*__HALRF_DPK_H__*/

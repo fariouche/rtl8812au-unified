@@ -249,6 +249,7 @@ typedef enum _HAL_DEF_VARIABLE {
 	HAL_DEF_TX_PAGE_SIZE,
 	HAL_DEF_TX_PAGE_BOUNDARY,
 	HAL_DEF_TX_PAGE_BOUNDARY_WOWLAN,
+	HAL_DEF_TX_BUFFER_LAST_ENTRY,
 	HAL_DEF_ANT_DETECT,/* to do for 8723a */
 	HAL_DEF_PCI_ASPM_OSC, /* Support for ASPM OSC, added by Roger, 2013.03.27. */
 	HAL_DEF_EFUSE_USAGE,	/* Get current EFUSE utilization. 2008.12.19. Added by Roger. */
@@ -343,7 +344,10 @@ struct hal_ops {
 	void (*set_tx_power_level_handler)(_adapter *adapter, u8 channel);
 	void (*set_txpwr_done)(_adapter *adapter);
 	void (*set_tx_power_index_handler)(_adapter *adapter, u32 powerindex, enum rf_path rfpath, u8 rate);
-	u8 (*get_tx_power_index_handler)(_adapter *adapter, enum rf_path rfpath, u8 rate, u8 bandwidth, u8 channel, struct txpwr_idx_comp *tic);
+
+	u8 (*get_tx_power_index_handler)(_adapter *adapter, enum rf_path rfpath, RATE_SECTION rs, enum MGN_RATE rate
+		, enum channel_width bw, BAND_TYPE band, u8 cch, u8 opch, struct txpwr_idx_comp *tic);
+	s8 (*get_txpwr_target_extra_bias)(_adapter *adapter, enum rf_path rfpath, RATE_SECTION rs, enum MGN_RATE rate, enum channel_width bw, BAND_TYPE band, u8 cch);
 
 	void	(*hal_dm_watchdog)(_adapter *padapter);
 
@@ -373,7 +377,7 @@ struct hal_ops {
 	void (*write_syson_reg)(_adapter *padapter, u32 RegAddr, u32 BitMask, u32 Data);
 #endif
 	void (*read_wmmedca_reg)(_adapter *padapter, u16 *vo_params, u16 *vi_params, u16 *be_params, u16 *bk_params);
-	
+
 #ifdef CONFIG_HOSTAPD_MLME
 	s32(*hostap_mgnt_xmit_entry)(_adapter *padapter, _pkt *pkt);
 #endif
@@ -591,9 +595,9 @@ typedef enum _HARDWARE_TYPE {
 #define IS_HARDWARE_TYPE_8192FS(_Adapter)\
 	(rtw_get_hw_type(_Adapter) == HARDWARE_TYPE_RTL8192FS)
 #define IS_HARDWARE_TYPE_8192FU(_Adapter)\
-	(rtw_get_hw_type(_Adapter) == HARDWARE_TYPE_RTL8192FU)	
+	(rtw_get_hw_type(_Adapter) == HARDWARE_TYPE_RTL8192FU)
 #define IS_HARDWARE_TYPE_8192FE(_Adapter)\
-	(rtw_get_hw_type(_Adapter) == HARDWARE_TYPE_RTL8192FE)	
+	(rtw_get_hw_type(_Adapter) == HARDWARE_TYPE_RTL8192FE)
 #define	IS_HARDWARE_TYPE_8192F(_Adapter)\
 	(IS_HARDWARE_TYPE_8192FS(_Adapter) ||\
 	 IS_HARDWARE_TYPE_8192FU(_Adapter) ||\
@@ -694,7 +698,7 @@ uint rtw_hal_init(_adapter *padapter);
 uint rtw_hal_iface_init(_adapter *adapter);
 #endif
 
-enum rf_type rtw_chip_rftype_to_rfpath(_adapter *adapter);
+enum rf_type rtw_chip_rftype_to_hal_rftype(_adapter *adapter, u8 limit);
 void dump_hal_runtime_trx_mode(void *sel, _adapter *adapter);
 void dump_hal_trx_mode(void *sel, _adapter *adapter);
 u8 rtw_hal_rfpath_init(_adapter *adapter);
@@ -838,6 +842,9 @@ s32 rtw_hal_macid_wakeup(_adapter *adapter, u8 macid);
 s32 rtw_hal_macid_sleep_all_used(_adapter *adapter);
 s32 rtw_hal_macid_wakeup_all_used(_adapter *adapter);
 
+s32 rtw_hal_macid_drop(_adapter *adapter, u8 macid);
+s32 rtw_hal_macid_undrop(_adapter *adapter, u8 macid);
+
 s32 rtw_hal_fill_h2c_cmd(PADAPTER padapter, u8 ElementID, u32 CmdLen, u8 *pCmdBuffer);
 void rtw_hal_fill_fake_txdesc(_adapter *padapter, u8 *pDesc, u32 BufferLen,
 			      u8 IsPsPoll, u8 IsBTQosNull, u8 bDataFrame);
@@ -858,11 +865,16 @@ s32 rtw_hal_fw_dl(_adapter *padapter, u8 wowlan);
 #endif
 
 void rtw_hal_set_tx_power_level(_adapter *adapter, u8 channel);
+void rtw_hal_update_txpwr_level(_adapter *adapter);
 void rtw_hal_set_txpwr_done(_adapter *adapter);
 void rtw_hal_set_tx_power_index(_adapter *adapter, u32 powerindex
 	, enum rf_path rfpath, u8 rate);
-u8 rtw_hal_get_tx_power_index(_adapter *adapter, enum rf_path rfpath, u8 rate
-	, u8 bandwidth, u8 channel, struct txpwr_idx_comp *tic);
+
+u8 rtw_hal_get_tx_power_index(_adapter *adapter, enum rf_path rfpath
+	, RATE_SECTION rs, enum MGN_RATE rate, enum channel_width bw, BAND_TYPE band, u8 cch, u8 opch
+	, struct txpwr_idx_comp *tic);
+s8 rtw_hal_get_txpwr_target_extra_bias(_adapter *adapter, enum rf_path rfpath
+	, RATE_SECTION rs, enum MGN_RATE rate, enum channel_width bw, BAND_TYPE band, u8 cch);
 
 u8 rtw_hal_ops_check(_adapter *padapter);
 

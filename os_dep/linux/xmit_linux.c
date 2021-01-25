@@ -65,7 +65,7 @@ sint rtw_endofpktfile(struct pkt_file *pfile)
 
 void rtw_set_tx_chksum_offload(_pkt *pkt, struct pkt_attrib *pattrib)
 {
-#ifdef CONFIG_TCP_CSUM_OFFLOAD_TX	
+#ifdef CONFIG_TCP_CSUM_OFFLOAD_TX
 	struct sk_buff *skb = (struct sk_buff *)pkt;
 	struct iphdr *iph = NULL;
 	struct ipv6hdr *i6ph = NULL;
@@ -313,12 +313,12 @@ void rtw_os_xmit_schedule(_adapter *padapter)
 		tasklet_hi_schedule(&pxmitpriv->xmit_tasklet);
 
 	_exit_critical_bh(&pxmitpriv->lock, &irqL);
-	
+
 #if defined(CONFIG_PCI_HCI) && defined(CONFIG_XMIT_THREAD_MODE)
 	if (_rtw_queue_empty(&padapter->xmitpriv.pending_xmitbuf_queue) == _FALSE)
 		_rtw_up_sema(&padapter->xmitpriv.xmit_sema);
 #endif
-	
+
 
 #endif
 }
@@ -410,7 +410,7 @@ int rtw_mlcst2unicst(_adapter *padapter, struct sk_buff *skb)
 
 	for (i = 0; i < chk_alive_num; i++) {
 		psta = rtw_get_stainfo_by_offset(pstapriv, chk_alive_list[i]);
-		if (!(psta->state & _FW_LINKED)) {
+		if (!(psta->state & WIFI_ASOC_STATE)) {
 			DBG_COUNTER(padapter->tx_logs.os_tx_m2u_ignore_fw_linked);
 			continue;
 		}
@@ -459,7 +459,7 @@ int _rtw_xmit_entry(_pkt *pkt, _nic_hdl pnetdev)
 #ifdef CONFIG_TX_MCAST2UNI
 	extern int rtw_mc2u_disable;
 #endif /* CONFIG_TX_MCAST2UNI	 */
-#ifdef CONFIG_TCP_CSUM_OFFLOAD_TX	
+#ifdef CONFIG_TCP_CSUM_OFFLOAD_TX
 	struct sk_buff *skb = pkt;
 	struct sk_buff *segs, *nskb;
 	netdev_features_t features = padapter->pnetdev->features;
@@ -552,7 +552,6 @@ exit:
 	return 0;
 }
 
-#ifdef CONFIG_CUSTOMER_ALIBABA_GENERAL
 int check_alibaba_meshpkt(struct sk_buff *skb)
 {
 	u16 protocol;
@@ -566,7 +565,7 @@ int check_alibaba_meshpkt(struct sk_buff *skb)
 s32 rtw_alibaba_mesh_xmit_entry(_pkt *pkt, struct net_device *ndev)
 {
 	u16 frame_ctl;
-	
+
 	_adapter *padapter = (_adapter *)rtw_netdev_priv(ndev);
 	struct pkt_file pktfile;
 	struct rtw_ieee80211_hdr *pwlanhdr;
@@ -577,15 +576,15 @@ s32 rtw_alibaba_mesh_xmit_entry(_pkt *pkt, struct net_device *ndev)
 	unsigned char   *pframe;
 	struct sk_buff *skb =  (struct sk_buff *)pkt;
 	int len = skb->len;
-	
+
 	rtw_mstat_update(MSTAT_TYPE_SKB, MSTAT_ALLOC_SUCCESS, skb->truesize);
-	
+
 	pmgntframe = alloc_mgtxmitframe(pxmitpriv);
 	if (pmgntframe == NULL) {
 		goto fail;
 		return -1;
 	}
-	
+
 	pattrib = &pmgntframe->attrib;
 	update_mgntframe_attrib(padapter, pattrib);
 	_rtw_memset(pmgntframe->buf_addr, 0, WLANHDR_OFFSET + TXDESC_OFFSET);
@@ -612,7 +611,6 @@ fail:
 	rtw_skb_free(skb);
 	return 0;
 }
-#endif
 
 int rtw_xmit_entry(_pkt *pkt, _nic_hdl pnetdev)
 {
@@ -621,11 +619,9 @@ int rtw_xmit_entry(_pkt *pkt, _nic_hdl pnetdev)
 	int ret = 0;
 
 	if (pkt) {
-#ifdef CONFIG_CUSTOMER_ALIBABA_GENERAL
 		if (check_alibaba_meshpkt(pkt)) {
 			return rtw_alibaba_mesh_xmit_entry(pkt, pnetdev);
 		}
-#endif
 		if (check_fwstate(pmlmepriv, WIFI_MONITOR_STATE) == _TRUE) {
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 24))
 			rtw_monitor_xmit_entry((struct sk_buff *)pkt, pnetdev);

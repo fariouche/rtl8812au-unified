@@ -387,7 +387,7 @@ u8 rtw_rm_post_envent_cmd(_adapter *padapter, u32 rmid, u8 evid)
 	pev->rmid = rmid;
 	pev->evid = evid;
 
-	init_h2fwcmd_w_parm_no_rsp(pcmd, pev, GEN_CMD_CODE(_RM_POST_EVENT));
+	init_h2fwcmd_w_parm_no_rsp(pcmd, pev, CMD_RM_POST_EVENT);
 	res = rtw_enqueue_cmd(pcmdpriv, pcmd);
 exit:
 	return res;

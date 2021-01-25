@@ -15,6 +15,7 @@
 #ifndef __OSDEP_SERVICE_H_
 #define __OSDEP_SERVICE_H_
 
+
 #define _FAIL					0
 #define _SUCCESS				1
 #define RTW_RX_HANDLED			2
@@ -38,22 +39,29 @@
 #undef _FALSE
 #define _FALSE		0
 
+
 #ifdef PLATFORM_FREEBSD
 	#include <osdep_service_bsd.h>
 #endif
 
 #ifdef PLATFORM_LINUX
 	#include <linux/version.h>
-	#ifndef RHEL_RELEASE_CODE
-	#define RHEL_RELEASE_VERSION(a,b) (((a) << 8) + (b))
-	#define RHEL_RELEASE_CODE 0
-#endif
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0))
 	#include <linux/sched/signal.h>
 	#include <linux/sched/types.h>
 #endif
 	#include <osdep_service_linux.h>
 	#include <drv_types_linux.h>
+#endif
+
+#ifdef PLATFORM_OS_XP
+	#include <osdep_service_xp.h>
+	#include <drv_types_xp.h>
+#endif
+
+#ifdef PLATFORM_OS_CE
+	#include <osdep_service_ce.h>
+	#include <drv_types_ce.h>
 #endif
 
 /* #include <rtw_byteorder.h> */
@@ -301,6 +309,7 @@ u32 rtw_os_pkt_len(_pkt *pkt);
 extern void	_rtw_memcpy(void *dec, const void *sour, u32 sz);
 extern void _rtw_memmove(void *dst, const void *src, u32 sz);
 extern int	_rtw_memcmp(const void *dst, const void *src, u32 sz);
+extern int _rtw_memcmp2(const void *dst, const void *src, u32 sz);
 extern void	_rtw_memset(void *pbuf, int c, u32 sz);
 
 extern void	_rtw_init_listhead(_list *list);
@@ -456,6 +465,15 @@ __inline static _OS_STATUS res_to_status(sint res)
 	return res;
 #endif
 
+#ifdef PLATFORM_WINDOWS
+
+	if (res == _SUCCESS)
+		return NDIS_STATUS_SUCCESS;
+	else
+		return NDIS_STATUS_FAILURE;
+
+#endif
+
 }
 
 __inline static void rtw_dump_stack(void)
@@ -474,6 +492,16 @@ __inline static void rtw_dump_stack(void)
 __inline static int rtw_bug_check(void *parg1, void *parg2, void *parg3, void *parg4)
 {
 	int ret = _TRUE;
+
+#ifdef PLATFORM_WINDOWS
+	if (((uint)parg1) <= 0x7fffffff ||
+	    ((uint)parg2) <= 0x7fffffff ||
+	    ((uint)parg3) <= 0x7fffffff ||
+	    ((uint)parg4) <= 0x7fffffff) {
+		ret = _FALSE;
+		KeBugCheckEx(0x87110000, (ULONG_PTR)parg1, (ULONG_PTR)parg2, (ULONG_PTR)parg3, (ULONG_PTR)parg4);
+	}
+#endif
 
 	return ret;
 
@@ -577,6 +605,7 @@ static inline int largest_bit_64(u64 bitmask)
 
 #define rtw_abs(a) (a < 0 ? -a : a)
 #define rtw_min(a, b) ((a > b) ? b : a)
+#define rtw_max(a, b) ((a > b) ? a : b)
 #define rtw_is_range_a_in_b(hi_a, lo_a, hi_b, lo_b) (((hi_a) <= (hi_b)) && ((lo_a) >= (lo_b)))
 #define rtw_is_range_overlap(hi_a, lo_a, hi_b, lo_b) (((hi_a) > (lo_b)) && ((lo_a) < (hi_b)))
 
@@ -626,9 +655,11 @@ extern int rtw_readable_file_sz_chk(const char *path, u32 sz);
 extern int rtw_retrieve_from_file(const char *path, u8 *buf, u32 sz);
 extern int rtw_store_to_file(const char *path, u8 *buf, u32 sz);
 
+
 #ifndef PLATFORM_FREEBSD
 extern void rtw_free_netdev(struct net_device *netdev);
 #endif /* PLATFORM_FREEBSD */
+
 
 extern u64 rtw_modular64(u64 x, u64 y);
 extern u64 rtw_division64(u64 x, u64 y);

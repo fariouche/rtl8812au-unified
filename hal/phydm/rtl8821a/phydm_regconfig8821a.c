@@ -18,14 +18,8 @@
 
 #if (RTL8821A_SUPPORT == 1)
 
-void
-odm_config_rf_reg_8821a(
-	struct dm_struct				*dm,
-	u32					addr,
-	u32					data,
-	enum rf_path     RF_PATH,
-	u32				    reg_addr
-)
+void odm_config_rf_reg_8821a(struct dm_struct *dm, u32 addr, u32 data,
+			     enum rf_path RF_PATH, u32 reg_addr)
 {
 	if (addr == 0xfe || addr == 0xffe) {
 #ifdef CONFIG_LONG_DELAY_ISSUE
@@ -50,20 +44,16 @@ odm_config_rf_reg_8821a(
 	}
 }
 
-
-void
-odm_config_rf_radio_a_8821a(
-	struct dm_struct				*dm,
-	u32					addr,
-	u32					data
-)
+void odm_config_rf_radio_a_8821a(struct dm_struct *dm, u32 addr, u32 data)
 {
-	u32  content = 0x1000; /* RF_Content: radioa_txt */
-	u32	maskfor_phy_set = (u32)(content & 0xE000);
+	u32 content = 0x1000; /* RF_Content: radioa_txt */
+	u32 maskfor_phy_set = (u32)(content & 0xE000);
 
 	odm_config_rf_reg_8821a(dm, addr, data, RF_PATH_A, addr | maskfor_phy_set);
 
-	PHYDM_DBG(dm, ODM_COMP_INIT, "===> odm_config_rf_with_header_file: [RadioA] %08X %08X\n", addr, data);
+	PHYDM_DBG(dm, ODM_COMP_INIT,
+		  "===> odm_config_rf_with_header_file: [RadioA] %08X %08X\n",
+		  addr, data);
 }
 
 /* 8821 no RF B */
@@ -80,47 +70,34 @@ odm_config_rf_radio_b_8821a(
 
 	odm_config_rf_reg_8812a(dm, addr, data, RF_PATH_B, addr | maskfor_phy_set);
 
-	PHYDM_DBG(dm, ODM_COMP_INIT, "===> odm_config_rf_with_header_file: [RadioB] %08X %08X\n", addr, data);
-
+	PHYDM_DBG(dm, ODM_COMP_INIT,
+		  "===> odm_config_rf_with_header_file: [RadioB] %08X %08X\n",
+		  addr, data);
 }
 #endif
 
-void
-odm_config_mac_8821a(
-	struct dm_struct	*dm,
-	u32		addr,
-	u8		data
-)
+void odm_config_mac_8821a(struct dm_struct *dm, u32 addr, u8 data)
 {
 	odm_write_1byte(dm, addr, data);
-	PHYDM_DBG(dm, ODM_COMP_INIT, "===> odm_config_mac_with_header_file: [MAC_REG] %08X %08X\n", addr, data);
+	PHYDM_DBG(dm, ODM_COMP_INIT,
+		  "===> odm_config_mac_with_header_file: [MAC_REG] %08X %08X\n",
+		  addr, data);
 }
 
-void
-odm_config_bb_agc_8821a(
-	struct dm_struct	*dm,
-	u32		addr,
-	u32		bitmask,
-	u32		data
-)
+void odm_config_bb_agc_8821a(struct dm_struct *dm, u32 addr, u32 bitmask,
+			     u32 data)
 {
 	odm_set_bb_reg(dm, addr, bitmask, data);
 	/* Add 1us delay between BB/RF register setting. */
 	ODM_delay_us(1);
 
-	PHYDM_DBG(dm, ODM_COMP_INIT, "===> odm_config_bb_with_header_file: [AGC_TAB] %08X %08X\n", addr, data);
+	PHYDM_DBG(dm, ODM_COMP_INIT,
+		  "===> odm_config_bb_with_header_file: [AGC_TAB] %08X %08X\n",
+		  addr, data);
 }
 
-void
-odm_config_bb_phy_reg_pg_8821a(
-	struct dm_struct	*dm,
-	u32		band,
-	u32		rf_path,
-	u32		tx_num,
-	u32		addr,
-	u32		bitmask,
-	u32		data
-)
+void odm_config_bb_phy_reg_pg_8821a(struct dm_struct *dm, u32 band, u32 rf_path,
+				    u32 tx_num, u32 addr, u32 bitmask, u32 data)
 {
 	if (addr == 0xfe)
 #ifdef CONFIG_LONG_DELAY_ISSUE
@@ -139,23 +116,19 @@ odm_config_bb_phy_reg_pg_8821a(
 	else if (addr == 0xf9)
 		ODM_delay_us(1);
 
-	PHYDM_DBG(dm, ODM_COMP_INIT, "===> odm_config_bb_with_header_file: [PHY_REG] %08X %08X %08X\n", addr, bitmask, data);
+	PHYDM_DBG(dm, ODM_COMP_INIT,
+		  "===> odm_config_bb_with_header_file: [PHY_REG] %08X %08X %08X\n",
+		  addr, bitmask, data);
 
 #if (DM_ODM_SUPPORT_TYPE & ODM_CE)
 	phy_store_tx_power_by_rate(dm->adapter, band, rf_path, tx_num, addr, bitmask, data);
 #elif (DM_ODM_SUPPORT_TYPE & ODM_WIN)
-	PHY_StoreTxPowerByRate((PADAPTER)dm->adapter, band, rf_path, tx_num, addr, bitmask, data);
+	PHY_StoreTxPowerByRate(dm->adapter, band, rf_path, tx_num, addr, bitmask, data);
 #endif
-
 }
 
-void
-odm_config_bb_phy_8821a(
-	struct dm_struct	*dm,
-	u32		addr,
-	u32		bitmask,
-	u32		data
-)
+void odm_config_bb_phy_8821a(struct dm_struct *dm, u32 addr, u32 bitmask,
+			     u32 data)
 {
 	if (addr == 0xfe)
 #ifdef CONFIG_LONG_DELAY_ISSUE
@@ -179,28 +152,22 @@ odm_config_bb_phy_8821a(
 
 	/* Add 1us delay between BB/RF register setting. */
 	ODM_delay_us(1);
-	PHYDM_DBG(dm, ODM_COMP_INIT, "===> odm_config_bb_with_header_file: [PHY_REG] %08X %08X\n", addr, data);
+	PHYDM_DBG(dm, ODM_COMP_INIT,
+		  "===> odm_config_bb_with_header_file: [PHY_REG] %08X %08X\n",
+		  addr, data);
 }
 
-void
-odm_config_bb_txpwr_lmt_8821a(
-	struct dm_struct	*dm,
-	u8		*regulation,
-	u8		*band,
-	u8		*bandwidth,
-	u8		*rate_section,
-	u8		*rf_path,
-	u8	*channel,
-	u8		*power_limit
-)
+void odm_config_bb_txpwr_lmt_8821a(struct dm_struct *dm, u8 *regulation,
+				   u8 *band, u8 *bandwidth, u8 *rate_section,
+				   u8 *rf_path, u8 *channel, u8 *power_limit)
 {
 #if (DM_ODM_SUPPORT_TYPE & ODM_CE)
 	phy_set_tx_power_limit(dm, regulation, band,
-		       bandwidth, rate_section, rf_path, channel, power_limit);
+			       bandwidth, rate_section, rf_path, channel, power_limit);
 #elif (DM_ODM_SUPPORT_TYPE & ODM_WIN)
 	PHY_SetTxPowerLimit(dm, regulation, band,
-		       bandwidth, rate_section, rf_path, channel, power_limit);
+			    bandwidth, rate_section, rf_path, channel, power_limit);
 #endif
 }
 
-#endif	/* #if (RTL8821A_SUPPORT == 1)*/
+#endif /* #if (RTL8821A_SUPPORT == 1)*/

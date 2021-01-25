@@ -111,7 +111,13 @@ enum {
 #define WPA_CIPHER_WEP104 BIT(2)
 #define WPA_CIPHER_TKIP	BIT(3)
 #define WPA_CIPHER_CCMP	BIT(4)
-
+#define WPA_CIPHER_GCMP	BIT(5)
+#define WPA_CIPHER_GCMP_256	BIT(6)
+#define WPA_CIPHER_CCMP_256	BIT(7)
+#define WPA_CIPHER_BIP_CMAC_128	BIT(8)
+#define WPA_CIPHER_BIP_GMAC_128	BIT(9)
+#define WPA_CIPHER_BIP_GMAC_256	BIT(10)
+#define WPA_CIPHER_BIP_CMAC_256	BIT(11)
 
 
 #define WPA_SELECTOR_LEN 4
@@ -125,6 +131,9 @@ extern u8 WPA_CIPHER_SUITE_WEP40[];
 extern u8 WPA_CIPHER_SUITE_TKIP[];
 extern u8 WPA_CIPHER_SUITE_WRAP[];
 extern u8 WPA_CIPHER_SUITE_CCMP[];
+extern u8 RSN_CIPHER_SUITE_GCMP[];
+extern u8 RSN_CIPHER_SUITE_GCMP_256[];
+extern u8 RSN_CIPHER_SUITE_CCMP_256[];
 extern u8 WPA_CIPHER_SUITE_WEP104[];
 
 
@@ -665,11 +674,12 @@ struct ieee80211_snap_hdr {
 #define WLAN_REASON_CLASS3_FRAME_FROM_NONASSOC_STA 7
 #define WLAN_REASON_DISASSOC_STA_HAS_LEFT 8
 #define WLAN_REASON_STA_REQ_ASSOC_WITHOUT_AUTH 9
+#define WLAN_REASON_IEEE_802_1X_AUTH_FAILED 23
 #define WLAN_REASON_MESH_PEER_CANCELED 52
 #define WLAN_REASON_MESH_MAX_PEERS 53
 #define WLAN_REASON_MESH_CONFIG 54
 #define WLAN_REASON_MESH_CLOSE 55
-#define WLAN_REASON_MESH_MAX_RETRIES 56 
+#define WLAN_REASON_MESH_MAX_RETRIES 56
 #define WLAN_REASON_MESH_CONFIRM_TIMEOUT 57
 #define WLAN_REASON_MESH_INVALID_GTK 58
 #define WLAN_REASON_MESH_INCONSISTENT_PARAM 59
@@ -766,6 +776,7 @@ struct ieee80211_snap_hdr {
 #define IEEE80211_NUM_OFDM_RATESLEN	8
 
 
+
 #define IEEE80211_CCK_RATE_1MB		        0x02
 #define IEEE80211_CCK_RATE_2MB		        0x04
 #define IEEE80211_CCK_RATE_5MB		        0x0B
@@ -776,6 +787,8 @@ struct ieee80211_snap_hdr {
 #define IEEE80211_OFDM_RATE_12MB		0x18
 #define IEEE80211_OFDM_RATE_18MB		0x24
 #define IEEE80211_OFDM_RATE_24MB		0x30
+#define IEEE80211_PBCC_RATE_22MB		0x2C
+#define IEEE80211_FREAK_RATE_22_5MB		0x2D
 #define IEEE80211_OFDM_RATE_36MB		0x48
 #define IEEE80211_OFDM_RATE_48MB		0x60
 #define IEEE80211_OFDM_RATE_54MB		0x6C
@@ -1036,6 +1049,8 @@ typedef enum _RATE_SECTION {
 	VHT_4SS = VHT_4SSMCS0_4SSMCS9,
 	RATE_SECTION_NUM,
 } RATE_SECTION;
+
+RATE_SECTION mgn_rate_to_rs(enum MGN_RATE rate);
 
 const char *rate_section_str(u8 section);
 
@@ -1448,29 +1463,13 @@ enum ieee80211_state {
 #define PORT_FMT "%u"
 #define PORT_ARG(x) ntohs(*((u16 *)(x)))
 
-#ifdef PLATFORM_FREEBSD /* Baron change func to macro */
 #define is_multicast_mac_addr(Addr) ((((Addr[0]) & 0x01) == 0x01) && ((Addr[0]) != 0xff))
 #define is_broadcast_mac_addr(Addr) ((((Addr[0]) & 0xff) == 0xff) && (((Addr[1]) & 0xff) == 0xff) && \
 	(((Addr[2]) & 0xff) == 0xff) && (((Addr[3]) & 0xff) == 0xff) && (((Addr[4]) & 0xff) == 0xff) && \
 				     (((Addr[5]) & 0xff) == 0xff))
-#else
-extern __inline int is_multicast_mac_addr(const u8 *addr)
-{
-	return (addr[0] != 0xff) && (0x01 & addr[0]);
-}
+#define is_zero_mac_addr(Addr)	((Addr[0] == 0x00) && (Addr[1] == 0x00) && (Addr[2] == 0x00) &&   \
+                (Addr[3] == 0x00) && (Addr[4] == 0x00) && (Addr[5] == 0x00))
 
-extern __inline int is_broadcast_mac_addr(const u8 *addr)
-{
-	return ((addr[0] == 0xff) && (addr[1] == 0xff) && (addr[2] == 0xff) &&   \
-		(addr[3] == 0xff) && (addr[4] == 0xff) && (addr[5] == 0xff));
-}
-
-extern __inline int is_zero_mac_addr(const u8 *addr)
-{
-	return ((addr[0] == 0x00) && (addr[1] == 0x00) && (addr[2] == 0x00) &&   \
-		(addr[3] == 0x00) && (addr[4] == 0x00) && (addr[5] == 0x00));
-}
-#endif /* PLATFORM_FREEBSD */
 
 #define CFG_IEEE80211_RESERVE_FCS (1<<0)
 #define CFG_IEEE80211_COMPUTE_FCS (1<<1)
@@ -1525,6 +1524,9 @@ enum rtw_ieee80211_category {
 	RTW_WLAN_CATEGORY_SELF_PROTECTED = 15,
 	RTW_WLAN_CATEGORY_WMM = 17,
 	RTW_WLAN_CATEGORY_VHT = 21,
+#ifdef CONFIG_RTW_TOKEN_BASED_XMIT
+	RTW_WLAN_CATEGORY_TBTX = 25,
+#endif
 	RTW_WLAN_CATEGORY_P2P = 0x7f,/* P2P action frames */
 };
 
@@ -1702,6 +1704,9 @@ enum rtw_ieee80211_wnm_actioncode {
 
 #define OUI_BROADCOM 0x00904c /* Broadcom (Epigram) */
 
+#ifdef CONFIG_RTW_TOKEN_BASED_XMIT
+#define OUI_REALTEK	0x00e04c /* Realtek */
+#endif
 #define VENDOR_HT_CAPAB_OUI_TYPE 0x33 /* 00-90-4c:0x33 */
 
 enum rtw_ieee80211_rann_flags {
@@ -1887,6 +1892,10 @@ struct rtw_ieee802_11_elems {
 	u8 *rann;
 	u8 rann_len;
 #endif
+#ifdef CONFIG_RTW_TOKEN_BASED_XMIT
+	u8 *tbtx_cap;
+	u8 tbtx_cap_len;
+#endif
 };
 
 typedef enum { ParseOK = 0, ParseUnknown = 1, ParseFailed = -1 } ParseRes;
@@ -1942,10 +1951,10 @@ int rtw_rsne_info_parse(const u8 *ie, uint ie_len, struct rsne_info *info);
 unsigned char *rtw_get_wpa_ie(unsigned char *pie, int *wpa_ie_len, int limit);
 unsigned char *rtw_get_wpa2_ie(unsigned char *pie, int *rsn_ie_len, int limit);
 int rtw_get_wpa_cipher_suite(u8 *s);
-int rtw_get_wpa2_cipher_suite(u8 *s);
+int rtw_get_rsn_cipher_suite(u8 *s);
 int rtw_get_wapi_ie(u8 *in_ie, uint in_len, u8 *wapi_ie, u16 *wapi_len);
 int rtw_parse_wpa_ie(u8 *wpa_ie, int wpa_ie_len, int *group_cipher, int *pairwise_cipher, u32 *akm);
-int rtw_parse_wpa2_ie(u8 *wpa_ie, int wpa_ie_len, int *group_cipher, int *pairwise_cipher, u32 *akm, u8 *mfp_opt);
+int rtw_parse_wpa2_ie(u8 *wpa_ie, int wpa_ie_len, int *group_cipher, int *pairwise_cipher, int *gmcs, u32 *akm, u8 *mfp_opt);
 
 int rtw_get_sec_ie(u8 *in_ie, uint in_len, u8 *rsn_ie, u16 *rsn_len, u8 *wpa_ie, u16 *wpa_len);
 

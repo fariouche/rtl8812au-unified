@@ -371,7 +371,7 @@ int rtw_android_get_rssi(struct net_device *net, char *command, int total_len)
 	struct	wlan_network	*pcur_network = &pmlmepriv->cur_network;
 	int bytes_written = 0;
 
-	if (check_fwstate(pmlmepriv, _FW_LINKED) == _TRUE) {
+	if (check_fwstate(pmlmepriv, WIFI_ASOC_STATE) == _TRUE) {
 		bytes_written += snprintf(&command[bytes_written], total_len, "%s rssi %d",
 			pcur_network->network.Ssid.Ssid, padapter->recvpriv.rssi);
 	}
@@ -656,14 +656,14 @@ int rtw_android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd)
 		ret = -EFAULT;
 		goto exit;
 	}
-	
+
 	command = rtw_zmalloc(priv_cmd.total_len+1);
 	if (!command) {
 		RTW_INFO("%s: failed to allocate memory\n", __FUNCTION__);
 		ret = -ENOMEM;
 		goto exit;
 	}
-	#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)) || (RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(8,0))
+	#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0))
 	if (!access_ok(priv_cmd.buf, priv_cmd.total_len)) {
 	#else
 	if (!access_ok(VERIFY_READ, priv_cmd.buf, priv_cmd.total_len)) {
@@ -935,7 +935,7 @@ int rtw_android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd)
 		bytes_written = rtw_android_set_aek(net, command, priv_cmd.total_len);
 		break;
 #endif
-	
+
 	case ANDROID_WIFI_CMD_EXT_AUTH_STATUS: {
 		rtw_set_external_auth_status(padapter,
 			command + strlen("EXT_AUTH_STATUS "),
@@ -1083,7 +1083,7 @@ void *wifi_get_country_code(char *ccode)
 	RTW_INFO("%s\n", __FUNCTION__);
 	if (!ccode)
 		return NULL;
-	if (wifi_control_data && wifi_control_data->get_country_code, 0)
+	if (wifi_control_data && wifi_control_data->get_country_code)
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0))
 		return wifi_control_data->get_country_code(ccode, flags);
 #else /* Linux kernel < 3.18 */

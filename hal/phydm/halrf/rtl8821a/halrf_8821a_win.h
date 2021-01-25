@@ -13,8 +13,8 @@
  *
  *****************************************************************************/
 
-#ifndef __HAL_PHY_RF_8821A_H__
-#define __HAL_PHY_RF_8821A_H__
+#ifndef __HALRF_8821A_H__
+#define __HALRF_8821A_H__
 
 /*--------------------------Define Parameters-------------------------------*/
 #define	IQK_DELAY_TIME_8821A		10		/* ms */
@@ -66,7 +66,7 @@ get_delta_swing_table_8821a(
 void
 halrf_rf_lna_setting_8821a(
 	struct dm_struct	*dm,
-	enum phydm_lna_set type
+	enum halrf_lna_set type
 );
 
-#endif	/*  #ifndef __HAL_PHY_RF_8821A_H__ */
+#endif	/*#ifndef __HALRF_8821A_H__*/

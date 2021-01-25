@@ -24,9 +24,8 @@
 ******************************************************************************/
 
 void
-odm_read_and_config_mp_8821a_agc_tab(/* TC: Test Chip, MP: MP Chip*/
-	struct dm_struct  *dm
-);
+odm_read_and_config_mp_8821a_agc_tab( /* TC: Test Chip, MP: MP Chip*/
+				     struct dm_struct *dm);
 u32 odm_get_version_mp_8821a_agc_tab(void);
 
 /******************************************************************************
@@ -34,9 +33,8 @@ u32 odm_get_version_mp_8821a_agc_tab(void);
 ******************************************************************************/
 
 void
-odm_read_and_config_mp_8821a_phy_reg(/* TC: Test Chip, MP: MP Chip*/
-	struct dm_struct  *dm
-);
+odm_read_and_config_mp_8821a_phy_reg( /* TC: Test Chip, MP: MP Chip*/
+				     struct dm_struct *dm);
 u32 odm_get_version_mp_8821a_phy_reg(void);
 
 /******************************************************************************
@@ -44,9 +42,8 @@ u32 odm_get_version_mp_8821a_phy_reg(void);
 ******************************************************************************/
 
 void
-odm_read_and_config_mp_8821a_phy_reg_pg(/* TC: Test Chip, MP: MP Chip*/
-	struct dm_struct  *dm
-);
+odm_read_and_config_mp_8821a_phy_reg_pg( /* TC: Test Chip, MP: MP Chip*/
+					struct dm_struct *dm);
 u32 odm_get_version_mp_8821a_phy_reg_pg(void);
 
 /******************************************************************************
@@ -54,9 +51,8 @@ u32 odm_get_version_mp_8821a_phy_reg_pg(void);
 ******************************************************************************/
 
 void
-odm_read_and_config_mp_8821a_phy_reg_pg_dni_jp(/* TC: Test Chip, MP: MP Chip*/
-	struct dm_struct  *dm
-);
+odm_read_and_config_mp_8821a_phy_reg_pg_dni_jp( /* TC: Test Chip, MP: MP Chip*/
+					       struct dm_struct *dm);
 u32 odm_get_version_mp_8821a_phy_reg_pg_dni_jp(void);
 
 /******************************************************************************
@@ -64,9 +60,8 @@ u32 odm_get_version_mp_8821a_phy_reg_pg_dni_jp(void);
 ******************************************************************************/
 
 void
-odm_read_and_config_mp_8821a_phy_reg_pg_dni_us(/* TC: Test Chip, MP: MP Chip*/
-	struct dm_struct  *dm
-);
+odm_read_and_config_mp_8821a_phy_reg_pg_dni_us( /* TC: Test Chip, MP: MP Chip*/
+					       struct dm_struct *dm);
 u32 odm_get_version_mp_8821a_phy_reg_pg_dni_us(void);
 
 /******************************************************************************
@@ -74,9 +69,8 @@ u32 odm_get_version_mp_8821a_phy_reg_pg_dni_us(void);
 ******************************************************************************/
 
 void
-odm_read_and_config_mp_8821a_phy_reg_pg_e202_sa(/* TC: Test Chip, MP: MP Chip*/
-	struct dm_struct  *dm
-);
+odm_read_and_config_mp_8821a_phy_reg_pg_e202_sa( /* TC: Test Chip, MP: MP Chip*/
+						struct dm_struct *dm);
 u32 odm_get_version_mp_8821a_phy_reg_pg_e202sa(void);
 
 #endif

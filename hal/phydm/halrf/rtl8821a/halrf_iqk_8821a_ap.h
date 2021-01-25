@@ -13,8 +13,8 @@
  *
  *****************************************************************************/
 
-#ifndef __PHYDM_IQK_8821A_H__
-#define __PHYDM_IQK_8821A_H__
+#ifndef __HALRF_IQK_8821A_H__
+#define __HALRF_IQK_8821A_H__
 
 /*--------------------------Define Parameters-------------------------------*/
 
@@ -39,4 +39,4 @@ _phy_iq_calibrate_8821a(
 	struct dm_struct		*dm
 );
 #endif
-#endif	/*  #ifndef __PHYDM_IQK_8821A_H__ */
+#endif	/*#ifndef __HALRF_IQK_8821A_H__*/

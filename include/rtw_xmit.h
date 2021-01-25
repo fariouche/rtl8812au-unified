@@ -15,7 +15,6 @@
 #ifndef _RTW_XMIT_H_
 #define _RTW_XMIT_H_
 
-
 #if defined(CONFIG_SDIO_HCI) || defined(CONFIG_GSPI_HCI)
 	#ifdef CONFIG_TX_AGGREGATION
 		#ifdef CONFIG_RTL8822C
@@ -166,6 +165,8 @@
 		pattrib_iv[7] = dot11txpn._byte_.TSC5;\
 	} while (0)
 
+#define GCMP_IV(a, b, c) AES_IV(a, b, c)
+
 /* Check if AMPDU Tx is supported or not. If it is supported,
 * it need to check "amsdu in ampdu" is supported or not.
 * (ampdu_en, amsdu_ampdu_en) =
@@ -218,7 +219,11 @@
 #endif
 
 #ifdef CONFIG_USB_HCI
-	#define PACKET_OFFSET_SZ (8)
+	#ifdef USB_PACKET_OFFSET_SZ
+		#define PACKET_OFFSET_SZ (USB_PACKET_OFFSET_SZ)
+	#else
+		#define PACKET_OFFSET_SZ (8)
+	#endif
 	#define TXDESC_OFFSET (TXDESC_SIZE + PACKET_OFFSET_SZ)
 #endif
 
@@ -475,7 +480,6 @@ struct pkt_attrib {
 #ifdef CONFIG_WMMPS_STA
 	u8	trigger_frame;
 #endif /* CONFIG_WMMPS_STA */
-	
 	struct sta_info *psta;
 
 	u8 rtsen;
@@ -996,6 +1000,8 @@ u8 rtw_get_tx_bw_mode(_adapter *adapter, struct sta_info *sta);
 void rtw_update_tx_rate_bmp(struct dvobj_priv *dvobj);
 u8 rtw_get_tx_bw_bmp_of_ht_rate(struct dvobj_priv *dvobj, u8 rate, u8 max_bw);
 u8 rtw_get_tx_bw_bmp_of_vht_rate(struct dvobj_priv *dvobj, u8 rate, u8 max_bw);
+s16 rtw_adapter_get_oper_txpwr_max_mbm(_adapter *adapter);
+s16 rtw_get_oper_txpwr_max_mbm(struct dvobj_priv *dvobj);
 
 u8 query_ra_short_GI(struct sta_info *psta, u8 bw);
 
@@ -1021,7 +1027,7 @@ extern void rtw_amsdu_set_timer_status(_adapter *padapter, u8 priority, u8 statu
 extern void rtw_amsdu_set_timer(_adapter *padapter, u8 priority);
 extern void rtw_amsdu_cancel_timer(_adapter *padapter, u8 priority);
 
-extern s32 rtw_xmitframe_coalesce_amsdu(_adapter *padapter, struct xmit_frame *pxmitframe, struct xmit_frame *pxmitframe_queue);	
+extern s32 rtw_xmitframe_coalesce_amsdu(_adapter *padapter, struct xmit_frame *pxmitframe, struct xmit_frame *pxmitframe_queue);
 extern s32 check_amsdu(struct xmit_frame *pxmitframe);
 extern s32 check_amsdu_tx_support(_adapter *padapter);
 extern struct xmit_frame *rtw_get_xframe(struct xmit_priv *pxmitpriv, int *num_frame);

@@ -38,6 +38,5 @@ int is_wildcard_bssid(u8 *bssid);
 int rm_get_path_a_max_tx_power(_adapter *adapter, s8 *path_a);
 int rm_get_tx_power(PADAPTER adapter, enum rf_path path, enum MGN_RATE rate, s8 *pwr);
 int rm_get_rx_sensitivity(PADAPTER adapter, enum channel_width bw, enum MGN_RATE rate, s8 *pwr);
-char *get_rate_name(enum MGN_RATE rate);
 
 #endif /* _RTW_RM_UTIL_H_ */

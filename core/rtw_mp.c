@@ -23,20 +23,20 @@
 	#include <rtw_bt_mp.h>
 #endif
 
-// #ifdef CONFIG_MP_VHT_HW_TX_MODE
-// #define CEILING_POS(X) ((X - (int)(X)) > 0 ? (int)(X + 1) : (int)(X))
-// #define CEILING_NEG(X) ((X - (int)(X)) < 0 ? (int)(X - 1) : (int)(X))
-// #define ceil(X) (((X) > 0) ? CEILING_POS(X) : CEILING_NEG(X))
-//
-// int rtfloor(float x)
-// {
-// 	int i = x - 2;
-// 	while
-// 	(++i <= x - 1)
-// 		;
-// 	return i;
-// }
-// #endif
+#ifdef CONFIG_MP_VHT_HW_TX_MODE
+#define CEILING_POS(X) ((X - (int)(X)) > 0 ? (int)(X + 1) : (int)(X))
+#define CEILING_NEG(X) ((X - (int)(X)) < 0 ? (int)(X - 1) : (int)(X))
+#define ceil(X) (((X) > 0) ? CEILING_POS(X) : CEILING_NEG(X))
+
+int rtfloor(float x)
+{
+	int i = x - 2;
+	while
+	(++i <= x - 1)
+		;
+	return i;
+}
+#endif
 
 #ifdef CONFIG_MP_INCLUDED
 u32 read_macreg(_adapter *padapter, u32 addr, u32 sz)
@@ -386,6 +386,12 @@ void mpt_InitHWConfig(PADAPTER Adapter)
 		RTW_INFO(" 0x1c44 = 0x%x\n", phy_query_bb_reg(Adapter, 0x1c44, bMaskDWord));
 	}
 #endif
+#if defined(CONFIG_RTL8814B)
+	else if(IS_HARDWARE_TYPE_8814B(Adapter))
+	{
+		PlatformEFIOWrite2Byte(Adapter, REG_RXFLTMAP1_8814B, 0x2000);
+	}
+#endif
 
 }
 
@@ -506,9 +512,7 @@ static void  PHY_SetRFPathSwitch(PADAPTER padapter , BOOLEAN bMain) {
 #endif
 	} else if (IS_HARDWARE_TYPE_8822C(padapter)) {
 #ifdef CONFIG_RTL8822C
-		/* remove for MP EVM Fail, need to review by willis 20180809
 		phy_set_rf_path_switch_8822c(phydm, bMain);
-		*/
 #endif
 	} else if (IS_HARDWARE_TYPE_8814B(padapter)) {
 #ifdef CONFIG_RTL8814B
@@ -747,53 +751,58 @@ static void init_mp_data(PADAPTER padapter)
 	pDM_Odm->rf_calibrate_info.txpowertrack_control = _FALSE;
 }
 
-void MPT_PwrCtlDM(PADAPTER padapter, u32 bstart)
+void MPT_PwrCtlDM(PADAPTER padapter, u32 trk_type)
 {
 	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(padapter);
 	struct dm_struct		*pDM_Odm = &pHalData->odmpriv;
 	u32	rf_ability;
 
-	if (bstart == 1) {
-		RTW_INFO("in MPT_PwrCtlDM start\n");
+	padapter->mppriv.tssitrk_on = trk_type == 3;
 
-		rf_ability = ((u32)halrf_cmn_info_get(pDM_Odm, HALRF_CMNINFO_ABILITY)) | HAL_RF_TX_PWR_TRACK;
-		halrf_cmn_info_set(pDM_Odm, HALRF_CMNINFO_ABILITY, rf_ability);
-		halrf_set_pwr_track(pDM_Odm, true);
-		pDM_Odm->rf_calibrate_info.txpowertrack_control = _TRUE;
-		padapter->mppriv.mp_dm = 1;
+	if (trk_type == 0) { /* thermal PwrTrk off*/
+		struct txpwrtrack_cfg c;
+		u8	chnl = 0 ;
 
-	} else {
-		RTW_INFO("in MPT_PwrCtlDM stop\n");
+		RTW_INFO("in Thermal tracking off\n");
 		rf_ability = ((u32)halrf_cmn_info_get(pDM_Odm, HALRF_CMNINFO_ABILITY)) & ~HAL_RF_TX_PWR_TRACK;
 		halrf_cmn_info_set(pDM_Odm, HALRF_CMNINFO_ABILITY, rf_ability);
-		halrf_set_pwr_track(pDM_Odm, false);
-		pDM_Odm->rf_calibrate_info.txpowertrack_control = _FALSE;
+		halrf_cmn_info_set(pDM_Odm, HALRF_CMNINFO_POWER_TRACK_CONTROL, trk_type);
+		halrf_set_pwr_track(pDM_Odm, FALSE);
+		pDM_Odm->rf_calibrate_info.txpowertrack_control = trk_type;
 		if (IS_HARDWARE_TYPE_8822C(padapter))
 			padapter->mppriv.mp_dm = 1; /* default enable dpk tracking */
 		else
 			padapter->mppriv.mp_dm = 0;
-		{
-			struct txpwrtrack_cfg c;
-			u8	chnl = 0 ;
-			_rtw_memset(&c, 0, sizeof(struct txpwrtrack_cfg));
-			configure_txpower_track(pDM_Odm, &c);
-			odm_clear_txpowertracking_state(pDM_Odm);
-			if (*c.odm_tx_pwr_track_set_pwr) {
-				if (pDM_Odm->support_ic_type == ODM_RTL8188F)
-					(*c.odm_tx_pwr_track_set_pwr)(pDM_Odm, MIX_MODE, RF_PATH_A, chnl);
-				else if (pDM_Odm->support_ic_type == ODM_RTL8723D) {
-					(*c.odm_tx_pwr_track_set_pwr)(pDM_Odm, BBSWING, RF_PATH_A, chnl);
-					SetTxPower(padapter);
-				} else if (pDM_Odm->support_ic_type == ODM_RTL8192F) {
-					(*c.odm_tx_pwr_track_set_pwr)(pDM_Odm, MIX_MODE, RF_PATH_A, chnl);
-					(*c.odm_tx_pwr_track_set_pwr)(pDM_Odm, MIX_MODE, RF_PATH_B, chnl);
-				} else {
-					(*c.odm_tx_pwr_track_set_pwr)(pDM_Odm, BBSWING, RF_PATH_A, chnl);
-					(*c.odm_tx_pwr_track_set_pwr)(pDM_Odm, BBSWING, RF_PATH_B, chnl);
-				}
+
+		_rtw_memset(&c, 0, sizeof(struct txpwrtrack_cfg));
+		configure_txpower_track(pDM_Odm, &c);
+		odm_clear_txpowertracking_state(pDM_Odm);
+		if (*c.odm_tx_pwr_track_set_pwr) {
+			if (pDM_Odm->support_ic_type == ODM_RTL8188F)
+				(*c.odm_tx_pwr_track_set_pwr)(pDM_Odm, MIX_MODE, RF_PATH_A, chnl);
+			else if (pDM_Odm->support_ic_type == ODM_RTL8723D) {
+				(*c.odm_tx_pwr_track_set_pwr)(pDM_Odm, BBSWING, RF_PATH_A, chnl);
+				SetTxPower(padapter);
+			} else if (pDM_Odm->support_ic_type == ODM_RTL8192F) {
+				(*c.odm_tx_pwr_track_set_pwr)(pDM_Odm, MIX_MODE, RF_PATH_A, chnl);
+				(*c.odm_tx_pwr_track_set_pwr)(pDM_Odm, MIX_MODE, RF_PATH_B, chnl);
+			} else {
+				(*c.odm_tx_pwr_track_set_pwr)(pDM_Odm, BBSWING, RF_PATH_A, chnl);
+				(*c.odm_tx_pwr_track_set_pwr)(pDM_Odm, BBSWING, RF_PATH_B, chnl);
 			}
 		}
+		return ;
 	}
+
+	rf_ability = ((u32)halrf_cmn_info_get(pDM_Odm, HALRF_CMNINFO_ABILITY)) | HAL_RF_TX_PWR_TRACK;
+	halrf_cmn_info_set(pDM_Odm, HALRF_CMNINFO_ABILITY, rf_ability);
+	halrf_cmn_info_set(pDM_Odm, HALRF_CMNINFO_POWER_TRACK_CONTROL, trk_type);
+	if (trk_type == 1 || trk_type == 3) /* Thermal PwrTrk ON , TSSI PwrTrk ON */
+		halrf_set_pwr_track(pDM_Odm, TRUE);
+	else
+		halrf_set_pwr_track(pDM_Odm, false);/* TSSI K */
+	pDM_Odm->rf_calibrate_info.txpowertrack_control = trk_type;
+	padapter->mppriv.mp_dm = 1;
 
 }
 
@@ -846,7 +855,7 @@ u32 mp_join(PADAPTER padapter, u8 mode)
 		goto end_of_mp_start_test;
 
 	/* init mp_start_test status */
-	if (check_fwstate(pmlmepriv, _FW_LINKED) == _TRUE) {
+	if (check_fwstate(pmlmepriv, WIFI_ASOC_STATE) == _TRUE) {
 		rtw_disassoc_cmd(padapter, 500, 0);
 		rtw_indicate_disconnect(padapter, 0, _FALSE);
 		rtw_free_assoc_resources_cmd(padapter, _TRUE, 0);
@@ -855,7 +864,7 @@ u32 mp_join(PADAPTER padapter, u8 mode)
 	/*pmlmepriv->fw_state = WIFI_MP_STATE;*/
 	init_fwstate(pmlmepriv, WIFI_MP_STATE);
 
-	set_fwstate(pmlmepriv, _FW_UNDER_LINKING);
+	set_fwstate(pmlmepriv, WIFI_UNDER_LINKING);
 
 	/* 3 2. create a new psta for mp driver */
 	/* clear psta in the cur_network, if any */
@@ -884,8 +893,8 @@ u32 mp_join(PADAPTER padapter, u8 mode)
 	_rtw_memcpy(pnetwork, &padapter->registrypriv.dev_network, padapter->registrypriv.dev_network.Length);
 
 	rtw_indicate_connect(padapter);
-	_clr_fwstate_(pmlmepriv, _FW_UNDER_LINKING);
-	set_fwstate(pmlmepriv, _FW_LINKED);
+	_clr_fwstate_(pmlmepriv, WIFI_UNDER_LINKING);
+	set_fwstate(pmlmepriv, WIFI_ASOC_STATE);
 
 end_of_mp_start_test:
 
@@ -1066,7 +1075,7 @@ static void mpt_AdjustRFRegByRateByChan92CU(PADAPTER pAdapter, u8 RateIdx, u8 Ch
 {
 	u8		eRFPath;
 	u32		rfReg0x26;
-	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(pAdapter);
+	struct hal_spec_t *hal_spec = GET_HAL_SPEC(pAdapter);
 
 
 	if (RateIdx < MPT_RATE_6M) 	/* CCK rate,for 88cu */
@@ -1098,7 +1107,7 @@ static void mpt_AdjustRFRegByRateByChan92CU(PADAPTER pAdapter, u8 RateIdx, u8 Ch
 		}
 	}
 
-	for (eRFPath = 0; eRFPath < pHalData->NumTotalRFPath; eRFPath++)
+	for (eRFPath = 0; eRFPath < hal_spec->rf_reg_path_num; eRFPath++)
 		write_rfreg(pAdapter, eRFPath, RF_SYN_G2, rfReg0x26);
 }
 #endif
@@ -1893,6 +1902,11 @@ void SetPacketTx(PADAPTER padapter)
 	else
 		pattrib->psta = rtw_get_stainfo(&padapter->stapriv, get_bssid(&padapter->mlmepriv));
 
+	if (pattrib->psta == NULL) {
+		RTW_INFO("%s:psta = NULL !!\n", __func__);
+		return;
+	}
+
 	pattrib->mac_id = pattrib->psta->cmn.mac_id;
 	pattrib->mbssid = 0;
 
@@ -2050,14 +2064,14 @@ void SetPacketTx(PADAPTER padapter)
 				}
 				idx = tmp_idx;
 			}
-			break;	
+			break;
 		case MP_TX_Payload_default_random:
-			RTW_INFO("MP packet tx default random payload!\n");	
+			RTW_INFO("MP packet tx default random payload!\n");
 			for (i = 0; i < pkt_end - ptr; i++)
 				ptr[i] = rtw_random32() % 0xFF;
 			break;
 		default:
-			RTW_INFO("Config payload type default use 0x%x\n!", pmp_priv->tx.payload);	
+			RTW_INFO("Config payload type default use 0x%x\n!", pmp_priv->tx.payload);
 			_rtw_memset(ptr, pmp_priv->tx.payload, pkt_end - ptr);
 			break;
 		}
@@ -2397,6 +2411,7 @@ u32 mp_query_psd(PADAPTER pAdapter, u8 *data)
 	u32 psd_data = 0;
 	struct psd_init_regs regs = {};
 	int psd_analysis = 0;
+	char *pdata = NULL;
 
 
 #ifdef PLATFORM_LINUX
@@ -2422,6 +2437,12 @@ u32 mp_query_psd(PADAPTER pAdapter, u8 *data)
 		sscanf(data, "pts=%d,start=%d,stop=%d", &psd_pts, &psd_start, &psd_stop);
 
 	data[0] = '\0';
+	pdata = data;
+
+	if (psd_stop > 1536 || psd_stop < 1) {
+		rtw_warn_on(1);
+		psd_stop = 1536;
+	}
 
 	if (IS_HARDWARE_TYPE_8822C(pAdapter)) {
 			u32 *psdbuf = rtw_zmalloc(sizeof(u32)*256);
@@ -2440,30 +2461,31 @@ u32 mp_query_psd(PADAPTER pAdapter, u8 *data)
 #ifdef CONFIG_LONG_DELAY_ISSUE
 		rtw_msleep_os(100);
 #else
-		rtw_mdelay_os(100);
+		rtw_mdelay_os(10);
 #endif
 			halrf_psd_query(p_dm, psdbuf, 256);
 
 			i = 0;
 			while (i < 256) {
-				sprintf(data, "%s%x ", data, (psdbuf[i]));
+				pdata += sprintf(pdata, "%x ", (psdbuf[i]));
 				i++;
 			}
-	
+
 		if (psdbuf)
 			rtw_mfree(psdbuf, sizeof(u32)*256);
 
 	} else {
-	i = psd_start;
-	while (i < psd_stop) {
-		if (i >= psd_pts)
-			psd_data = rtw_GetPSDData(pAdapter, i - psd_pts);
-		else
-			psd_data = rtw_GetPSDData(pAdapter, i);
+			i = psd_start;
 
-		sprintf(data, "%s%x ", data, psd_data);
-		i++;
-	}
+			while (i < psd_stop) {
+				if (i >= psd_pts)
+					psd_data = rtw_GetPSDData(pAdapter, i - psd_pts);
+				else
+					psd_data = rtw_GetPSDData(pAdapter, i);
+
+				pdata += sprintf(pdata, "%x ", psd_data);
+				i++;
+			}
 
 	}
 
@@ -3061,6 +3083,12 @@ u8 rtw_mp_mode_check(PADAPTER pAdapter)
 		return _FALSE;
 }
 
+bool rtw_is_mp_tssitrk_on(_adapter *adapter)
+{
+	_adapter *primary_adapter = GET_PRIMARY_ADAPTER(adapter);
+
+	return primary_adapter->mppriv.tssitrk_on;
+}
 
 u32 mpt_ProQueryCalTxPower(
 	PADAPTER	pAdapter,
@@ -3074,13 +3102,14 @@ u32 mpt_ProQueryCalTxPower(
 	u32			TxPower = 1;
 	struct txpwr_idx_comp tic;
 	u8 mgn_rate = mpt_to_mgnt_rate(pMptCtx->mpt_rate_index);
+	RATE_SECTION rs = mgn_rate_to_rs(mgn_rate);
 
-	TxPower = rtw_hal_get_tx_power_index(pAdapter, RfPath, mgn_rate, pHalData->current_channel_bw, pHalData->current_channel, &tic);
+	TxPower = rtw_hal_get_tx_power_index(pAdapter, RfPath, rs, mgn_rate
+		, pHalData->current_channel_bw, pHalData->current_band_type, pHalData->current_channel, 0, &tic);
 
-	RTW_INFO("TXPWR: [%c][%s]ch:%u, %s %uT, pwr_idx:%u(0x%02x) = %u + (%d=%d:%d) + (%d) + (%d) + (%d) + (%d)\n"
-		, rf_path_char(RfPath), ch_width_str(pHalData->current_channel_bw), pHalData->current_channel, MGN_RATE_STR(mgn_rate), tic.ntx_idx + 1
-		, TxPower, TxPower, tic.pg, (tic.by_rate > tic.limit ? tic.limit : tic.by_rate), tic.by_rate, tic.limit, tic.tpt
-		, tic.ebias, tic.btc, tic.dpd);
+	dump_tx_power_index_inline(RTW_DBGDUMP, pAdapter, RfPath
+		, pHalData->current_channel_bw, pHalData->current_channel
+		, mgn_rate, TxPower, &tic);
 
 	pAdapter->mppriv.txpoweridx = (u8)TxPower;
 	if (RfPath == RF_PATH_A)
@@ -3094,6 +3123,22 @@ u32 mpt_ProQueryCalTxPower(
 	hal_mpt_SetTxPower(pAdapter);
 
 	return TxPower;
+}
+
+u32 mpt_get_tx_power_finalabs_val(PADAPTER	padapter, u8 rf_path)
+{
+	HAL_DATA_TYPE	*pHalData	= GET_HAL_DATA(padapter);
+	PMPT_CONTEXT		pMptCtx = &(padapter->mppriv.mpt_ctx);
+
+	u8 mgn_rate = mpt_to_mgnt_rate(pMptCtx->mpt_rate_index);
+	u32 powerdbm = 0;
+
+	powerdbm = phy_get_tx_power_final_absolute_value(padapter, rf_path, mgn_rate, pHalData->current_channel_bw, pHalData->current_channel);
+
+	RTW_INFO("bw=%d, ch=%d, rateid=%d, TSSI Power(dBm):%d\n",
+		pHalData->current_channel_bw, pHalData->current_channel, mgn_rate ,powerdbm);
+
+	return powerdbm;
 }
 
 #ifdef CONFIG_MP_VHT_HW_TX_MODE
@@ -3169,15 +3214,11 @@ void CCK_generator(
 	PRT_PMAC_PKT_INFO	pPMacPktInfo
 )
 {
-// 	double	ratio = 0;
-	u32 ratio_11 = 0;
+	double	ratio = 0;
 	bool	crc16_in[32] = {0}, crc16_out[16] = {0};
 	bool LengthExtBit;
-// 	double LengthExact;
-// 	double LengthPSDU;
-	u32 LengthExact_11;
-	u32 LengthPSDU;
-
+	double LengthExact;
+	double LengthPSDU;
 	u8 i;
 	u32 PacketLength = pPMacTxInfo->PacketLength;
 
@@ -3189,52 +3230,41 @@ void CCK_generator(
 	switch (pPMacPktInfo->MCS) {
 	case 0:
 		pPMacTxInfo->SignalField = 0xA;
-// 		ratio = 8;
-		ratio_11 = 8 * 11;
+		ratio = 8;
 		/*CRC16_in(1,0:7)=[0 1 0 1 0 0 0 0]*/
 		crc16_in[1] = crc16_in[3] = 1;
 		break;
 	case 1:
 		pPMacTxInfo->SignalField = 0x14;
-// 		ratio = 4;
-		ratio_11 = 4 * 11;
+		ratio = 4;
 		/*CRC16_in(1,0:7)=[0 0 1 0 1 0 0 0];*/
 		crc16_in[2] = crc16_in[4] = 1;
 		break;
 	case 2:
 		pPMacTxInfo->SignalField = 0x37;
-// 		ratio = 8.0 / 5.5;
-		ratio_11 = 8 * 2;
+		ratio = 8.0 / 5.5;
 		/*CRC16_in(1,0:7)=[1 1 1 0 1 1 0 0];*/
 		crc16_in[0] = crc16_in[1] = crc16_in[2] = crc16_in[4] = crc16_in[5] = 1;
 		break;
 	case 3:
 		pPMacTxInfo->SignalField = 0x6E;
-// 		ratio = 8.0 / 11.0;
-		ratio_11 = 8;
+		ratio = 8.0 / 11.0;
 		/*CRC16_in(1,0:7)=[0 1 1 1 0 1 1 0];*/
 		crc16_in[1] = crc16_in[2] = crc16_in[3] = crc16_in[5] = crc16_in[6] = 1;
 		break;
 	}
 
-// 	LengthExact = PacketLength * ratio;
-// 	LengthPSDU = ceil(LengthExact);
-	LengthExact_11 = PacketLength * ratio_11;
-	LengthPSDU = (LengthExact_11 + 10) / 11;
+	LengthExact = PacketLength * ratio;
+	LengthPSDU = ceil(LengthExact);
 
-// 	if ((pPMacPktInfo->MCS == 3) &&
-// 	    ((LengthPSDU - LengthExact) >= 0.727 || (LengthPSDU - LengthExact) <= -0.727))
-// 		LengthExtBit = 1;
-// 	else
-// 		LengthExtBit = 0;
 	if ((pPMacPktInfo->MCS == 3) &&
-	    (LengthPSDU * 11 - LengthExact_11 >= 8))
+	    ((LengthPSDU - LengthExact) >= 0.727 || (LengthPSDU - LengthExact) <= -0.727))
 		LengthExtBit = 1;
 	else
 		LengthExtBit = 0;
 
-// 	pPMacTxInfo->LENGTH = (u32)LengthPSDU;
-	pPMacTxInfo->LENGTH = LengthPSDU;
+
+	pPMacTxInfo->LENGTH = (u32)LengthPSDU;
 	/* CRC16_in(1,16:31) = LengthPSDU[0:15]*/
 	for (i = 0; i < 16; i++)
 		crc16_in[i + 16] = (pPMacTxInfo->LENGTH >> i) & 0x1;
@@ -3337,100 +3367,67 @@ u32 LDPC_parameter_generator(
 	u32 N_TCB_int
 )
 {
-// 	double	CR = 0.;
-// 	double	N_pld = (double)N_pld_int;
-// 	double	N_TCB = (double)N_TCB_int;
-// 	double	N_CW = 0., N_shrt = 0., N_spcw = 0., N_fshrt = 0.;
-// 	double	L_LDPC = 0., K_LDPC = 0., L_LDPC_info = 0.;
-// 	double	N_punc = 0., N_ppcw = 0., N_fpunc = 0., N_rep = 0., N_rpcw = 0., N_frep = 0.;
-// 	double	R_eff = 0.;
-	u32	CR_12 = 0;
-	u32	N_CW = 0, N_shrt = 0;
-	u32	L_LDPC = 0, K_LDPC = 0;
-	u32	N_punc = 0;
+	double	CR = 0.;
+	double	N_pld = (double)N_pld_int;
+	double	N_TCB = (double)N_TCB_int;
+	double	N_CW = 0., N_shrt = 0., N_spcw = 0., N_fshrt = 0.;
+	double	L_LDPC = 0., K_LDPC = 0., L_LDPC_info = 0.;
+	double	N_punc = 0., N_ppcw = 0., N_fpunc = 0., N_rep = 0., N_rpcw = 0., N_frep = 0.;
+	double	R_eff = 0.;
 	u32	VHTSIGA2B3  = 0;/* extra symbol from VHT-SIG-A2 Bit 3*/
 
 	if (R == 0)
-// 		CR	= 0.5;
-		CR_12 = 6;
+		CR	= 0.5;
 	else if (R == 1)
-// 		CR = 2. / 3.;
-		CR_12 = 8;
+		CR = 2. / 3.;
 	else if (R == 2)
-// 		CR = 3. / 4.;
-		CR_12 = 9;
+		CR = 3. / 4.;
 	else if (R == 3)
-// 		CR = 5. / 6.;
-		CR_12 = 10;
+		CR = 5. / 6.;
 
-// 	if (N_TCB <= 648.) {
-	if (N_TCB_int <= 648) {
-// 		N_CW	= 1.;
-		N_CW	= 1;
-// 		if (N_TCB >= N_pld + 912.*(1. - CR))
-		if (N_TCB_int * 12 >= N_pld_int * 12 + 912 * (12 - CR_12))
-// 			L_LDPC	= 1296.;
-			L_LDPC	= 1296;
+	if (N_TCB <= 648.) {
+		N_CW	= 1.;
+		if (N_TCB >= N_pld + 912.*(1. - CR))
+			L_LDPC	= 1296.;
 		else
-// 			L_LDPC	= 648.;
-			L_LDPC	= 648;
-// 	} else if (N_TCB <= 1296.) {
-	} else if (N_TCB_int <= 1296) {
-// 		N_CW	= 1.;
-		N_CW	= 1;
-// 		if (N_TCB >= (double)N_pld + 1464.*(1. - CR))
-		if (N_TCB_int * 12 >= N_pld_int * 12 + 1464 * (12 - CR_12))
-// 			L_LDPC	= 1944.;
-			L_LDPC	= 1944;
+			L_LDPC	= 648.;
+	} else if (N_TCB <= 1296.) {
+		N_CW	= 1.;
+		if (N_TCB >= (double)N_pld + 1464.*(1. - CR))
+			L_LDPC	= 1944.;
 		else
-// 			L_LDPC	= 1296.;
-			L_LDPC	= 1296;
-// 	} else if	(N_TCB <= 1944.) {
-	} else if (N_TCB_int <= 1944) {
-// 		N_CW	= 1.;
-		N_CW	= 1;
-// 		L_LDPC	= 1944.;
-		L_LDPC	= 1944;
-// 	} else if (N_TCB <= 2592.) {
-	} else if (N_TCB_int <= 2592) {
-// 		N_CW	= 2.;
-		N_CW	= 2;
-// 		if (N_TCB >= N_pld + 2916.*(1. - CR))
-		if (N_TCB_int * 12 >= N_pld_int * 12 + 2916 * (12 - CR_12))
-// 			L_LDPC	= 1944.;
-			L_LDPC	= 1944;
+			L_LDPC	= 1296.;
+	} else if	(N_TCB <= 1944.) {
+		N_CW	= 1.;
+		L_LDPC	= 1944.;
+	} else if (N_TCB <= 2592.) {
+		N_CW	= 2.;
+		if (N_TCB >= N_pld + 2916.*(1. - CR))
+			L_LDPC	= 1944.;
 		else
-// 			L_LDPC	= 1296.;
-			L_LDPC	= 1296;
+			L_LDPC	= 1296.;
 	} else {
-// 		N_CW = ceil(N_pld / 1944. / CR);
-		N_CW = (N_pld_int + 162 * CR_12 - 1) / (162 * CR_12);
-// 		L_LDPC	= 1944.;
-		L_LDPC	= 1944;
+		N_CW = ceil(N_pld / 1944. / CR);
+		L_LDPC	= 1944.;
 	}
 	/*	Number of information bits per CW*/
-// 	K_LDPC = L_LDPC * CR;
-	K_LDPC = L_LDPC * CR_12 / 12; // assert L_LDPC % 12 == 0
+	K_LDPC = L_LDPC * CR;
 	/*	Number of shortening bits					max(0, (N_CW * L_LDPC * R) - N_pld)*/
-// 	N_shrt = (N_CW * K_LDPC - N_pld) > 0. ? (N_CW * K_LDPC - N_pld) : 0.;
-	N_shrt = N_CW * K_LDPC > N_pld_int ? (N_CW * K_LDPC - N_pld_int) : 0;
+	N_shrt = (N_CW * K_LDPC - N_pld) > 0. ? (N_CW * K_LDPC - N_pld) : 0.;
 	/*	Number of shortening bits per CW			N_spcw = rtfloor(N_shrt/N_CW)*/
-// 	N_spcw = rtfloor(N_shrt / N_CW);
+	N_spcw = rtfloor(N_shrt / N_CW);
 	/*	The first N_fshrt CWs shorten 1 bit more*/
-// 	N_fshrt = (double)((int)N_shrt % (int)N_CW);
+	N_fshrt = (double)((int)N_shrt % (int)N_CW);
 	/*	Number of data bits for the last N_CW-N_fshrt CWs*/
-// 	L_LDPC_info = K_LDPC - N_spcw;
+	L_LDPC_info = K_LDPC - N_spcw;
 	/*	Number of puncturing bits*/
-// 	N_punc = (N_CW * L_LDPC - N_TCB - N_shrt) > 0. ? (N_CW * L_LDPC - N_TCB - N_shrt) : 0.;
-	N_punc = N_CW * L_LDPC > N_TCB_int + N_shrt ? (N_CW * L_LDPC - N_TCB_int - N_shrt) : 0;
-// 	if (((N_punc > .1 * N_CW * L_LDPC * (1. - CR)) && (N_shrt < 1.2 * N_punc * CR / (1. - CR))) ||
-// 	    (N_punc > 0.3 * N_CW * L_LDPC * (1. - CR))) {
-	if (((N_punc * 120 > N_CW * L_LDPC * (12 - CR_12)) && (5 * N_shrt * (12 - CR_12) < 6 * N_punc * CR_12)) ||
-	    (N_punc * 40 > N_CW * L_LDPC * (12 - CR_12))) {
+	N_punc = (N_CW * L_LDPC - N_TCB - N_shrt) > 0. ? (N_CW * L_LDPC - N_TCB - N_shrt) : 0.;
+	if (((N_punc > .1 * N_CW * L_LDPC * (1. - CR)) && (N_shrt < 1.2 * N_punc * CR / (1. - CR))) ||
+	    (N_punc > 0.3 * N_CW * L_LDPC * (1. - CR))) {
 		/*cout << "*** N_TCB and N_punc are Recomputed ***" << endl;*/
 		VHTSIGA2B3 = 1;
-// 		N_TCB += (double)N_CBPSS * N_SS * m_STBC;
-// 		N_punc = (N_CW * L_LDPC - N_TCB - N_shrt) > 0. ? (N_CW * L_LDPC - N_TCB - N_shrt) : 0.;
+		N_TCB += (double)N_CBPSS * N_SS * m_STBC;
+		N_punc = (N_CW * L_LDPC - N_TCB - N_shrt) > 0. ? (N_CW * L_LDPC - N_TCB - N_shrt) : 0.;
 	} else
 		VHTSIGA2B3 = 0;
 
@@ -3449,8 +3446,7 @@ void PMAC_Nsym_generator(
 	u8	TX_RATE = pPMacTxInfo->TX_RATE;
 
 	u32 R, R_list[10] = {0, 0, 2, 0, 2, 1, 2, 3, 2, 3};
-// 	double CR = 0;
-	u32 CR_12 = 0;
+	double CR = 0;
 	u32 N_SD, N_BPSC_list[10] = {1, 2, 2, 4, 4, 6, 6, 6, 8, 8};
 	u32 N_BPSC = 0, N_CBPS = 0, N_DBPS = 0, N_ES = 0, N_SYM = 0, N_pld = 0, N_TCB = 0;
 	int D_R = 0;
@@ -3480,48 +3476,38 @@ void PMAC_Nsym_generator(
 
 		switch (R) {
 		case 0:
-// 			CR = .5;
-			CR_12 = 6;
+			CR = .5;
 			break;
 		case 1:
-// 			CR = 2. / 3.;
-			CR_12 = 8;
+			CR = 2. / 3.;
 			break;
 		case 2:
-// 			CR = 3. / 4.;
-			CR_12 = 9;
+			CR = 3. / 4.;
 			break;
 		case 3:
-// 			CR = 5. / 6.;
-			CR_12 = 10;
+			CR = 5. / 6.;
 			break;
 		}
 
 		N_BPSC = N_BPSC_list[MCS_temp];
 		N_CBPS = N_BPSC * N_SD * pPMacPktInfo->Nss;
-// 		N_DBPS = (u32)((double)N_CBPS * CR);
-		N_DBPS = N_CBPS * CR_12 / 12;
+		N_DBPS = (u32)((double)N_CBPS * CR);
 
 		if (pPMacTxInfo->bLDPC == FALSE) {
-// 			N_ES = (u32)ceil((double)(N_DBPS * pPMacPktInfo->Nss) / 4. / 300.);
-			N_ES = (N_DBPS * pPMacPktInfo->Nss + (4 * 300 - 1)) / (4 * 300);
+			N_ES = (u32)ceil((double)(N_DBPS * pPMacPktInfo->Nss) / 4. / 300.);
 			RTW_INFO("N_ES = %d\n", N_ES);
 
 			/*	N_SYM = m_STBC* (8*length+16+6*N_ES) / (m_STBC*N_DBPS)*/
-// 			N_SYM = pPMacTxInfo->m_STBC * (u32)ceil((double)(pPMacTxInfo->PacketLength * 8 + 16 + N_ES * 6) /
-// 					(double)(N_DBPS * pPMacTxInfo->m_STBC));
-			N_SYM = pPMacTxInfo->m_STBC * (pPMacTxInfo->PacketLength * 8 + 16 + N_ES * 6 + N_DBPS * pPMacTxInfo->m_STBC - 1) /
-					(N_DBPS * pPMacTxInfo->m_STBC);
+			N_SYM = pPMacTxInfo->m_STBC * (u32)ceil((double)(pPMacTxInfo->PacketLength * 8 + 16 + N_ES * 6) /
+					(double)(N_DBPS * pPMacTxInfo->m_STBC));
 
 		} else {
 			N_ES = 1;
 			/*	N_pld = length * 8 + 16*/
 			N_pld = pPMacTxInfo->PacketLength * 8 + 16;
 			RTW_INFO("N_pld = %d\n", N_pld);
-// 			N_SYM = pPMacTxInfo->m_STBC * (u32)ceil((double)(N_pld) /
-// 					(double)(N_DBPS * pPMacTxInfo->m_STBC));
-			N_SYM = pPMacTxInfo->m_STBC * (N_pld + N_DBPS * pPMacTxInfo->m_STBC - 1) /
-					(N_DBPS * pPMacTxInfo->m_STBC);
+			N_SYM = pPMacTxInfo->m_STBC * (u32)ceil((double)(N_pld) /
+					(double)(N_DBPS * pPMacTxInfo->m_STBC));
 			RTW_INFO("N_SYM = %d\n", N_SYM);
 			/*	N_avbits = N_CBPS *m_STBC *(N_pld/N_CBPS*R*m_STBC)*/
 			N_TCB = N_CBPS * N_SYM;
@@ -3536,44 +3522,33 @@ void PMAC_Nsym_generator(
 
 		switch (R) {
 		case 0:
-// 			CR = .5;
-			CR_12 = 6;
+			CR = .5;
 			break;
 		case 1:
-// 			CR = 2. / 3.;
-			CR_12 = 8;
+			CR = 2. / 3.;
 			break;
 		case 2:
-// 			CR = 3. / 4.;
-			CR_12 = 9;
+			CR = 3. / 4.;
 			break;
 		case 3:
-// 			CR = 5. / 6.;
-			CR_12 = 10;
+			CR = 5. / 6.;
 			break;
 		}
 		N_BPSC = N_BPSC_list[pPMacPktInfo->MCS];
 		N_CBPS = N_BPSC * N_SD * pPMacPktInfo->Nss;
-// 		N_DBPS = (u32)((double)N_CBPS * CR);
-		N_DBPS = N_CBPS * CR_12 / 12;
+		N_DBPS = (u32)((double)N_CBPS * CR);
 		if (pPMacTxInfo->bLDPC == FALSE) {
 			if (pPMacTxInfo->bSGI)
-// 				N_ES = (u32)ceil((double)(N_DBPS) / 3.6 / 600.);
-				N_ES = (N_DBPS + 2160 - 1) / 2160;
+				N_ES = (u32)ceil((double)(N_DBPS) / 3.6 / 600.);
 			else
-// 				N_ES = (u32)ceil((double)(N_DBPS) / 4. / 600.);
-				N_ES = (N_DBPS + 2400 - 1) / 2400;
+				N_ES = (u32)ceil((double)(N_DBPS) / 4. / 600.);
 			/*	N_SYM = m_STBC* (8*length+16+6*N_ES) / (m_STBC*N_DBPS)*/
-// 			N_SYM = pPMacTxInfo->m_STBC * (u32)ceil((double)(pPMacTxInfo->PacketLength * 8 + 16 + N_ES * 6) / (double)(N_DBPS * pPMacTxInfo->m_STBC));
-			N_SYM = pPMacTxInfo->m_STBC * (pPMacTxInfo->PacketLength * 8 + 16 + N_ES * 6 + N_DBPS * pPMacTxInfo->m_STBC - 1) /
-					(N_DBPS * pPMacTxInfo->m_STBC);
+			N_SYM = pPMacTxInfo->m_STBC * (u32)ceil((double)(pPMacTxInfo->PacketLength * 8 + 16 + N_ES * 6) / (double)(N_DBPS * pPMacTxInfo->m_STBC));
 			SIGA2B3 = 0;
 		} else {
 			N_ES = 1;
 			/*	N_SYM = m_STBC* (8*length+N_service) / (m_STBC*N_DBPS)*/
-// 			N_SYM = pPMacTxInfo->m_STBC * (u32)ceil((double)(pPMacTxInfo->PacketLength * 8 + 16) / (double)(N_DBPS * pPMacTxInfo->m_STBC));
-			N_SYM = pPMacTxInfo->m_STBC * (pPMacTxInfo->PacketLength * 8 + 16 + N_DBPS * pPMacTxInfo->m_STBC - 1) /
-					(N_DBPS * pPMacTxInfo->m_STBC);
+			N_SYM = pPMacTxInfo->m_STBC * (u32)ceil((double)(pPMacTxInfo->PacketLength * 8 + 16) / (double)(N_DBPS * pPMacTxInfo->m_STBC));
 			/*	N_avbits = N_sys_init * N_CBPS*/
 			N_TCB = N_CBPS * N_SYM;
 			/*	N_pld = N_sys_init * N_DBPS*/
@@ -3628,8 +3603,7 @@ void L_SIG_generator(
 		LENGTH = pPMacTxInfo->PacketLength;
 	} else {
 		u8	N_LTF;
-// 		double	T_data;
-		u32	T_data_5;
+		double	T_data;
 		u32	OFDM_symbol;
 
 		mode = 0;
@@ -3641,19 +3615,15 @@ void L_SIG_generator(
 			N_LTF = 4;
 
 		if (pPMacTxInfo->bSGI)
-// 			T_data = 3.6;
-			T_data_5 = 18;
+			T_data = 3.6;
 		else
-// 			T_data = 4.0;
-			T_data_5 = 20;
+			T_data = 4.0;
 
 		/*(L-SIG, HT-SIG, HT-STF, HT-LTF....HT-LTF, Data)*/
 		if (MPT_IS_VHT_RATE(pPMacTxInfo->TX_RATE))
-// 			OFDM_symbol = (u32)ceil((double)(8 + 4 + N_LTF * 4 + N_SYM * T_data + 4) / 4.);
-			OFDM_symbol = ((8 + 4) * 5 + N_LTF * 4 * 5 + N_SYM * T_data_5 + 4 * 5 + 20 - 1) / 20;
+			OFDM_symbol = (u32)ceil((double)(8 + 4 + N_LTF * 4 + N_SYM * T_data + 4) / 4.);
 		else
-// 			OFDM_symbol = (u32)ceil((double)(8 + 4 + N_LTF * 4 + N_SYM * T_data) / 4.);
-			OFDM_symbol = ((8 + 4) * 5 + N_LTF * 4 * 5 + N_SYM * T_data_5 + 20 - 1) / 20;
+			OFDM_symbol = (u32)ceil((double)(8 + 4 + N_LTF * 4 + N_SYM * T_data) / 4.);
 
 		RTW_INFO("%s , OFDM_symbol =%d\n", __func__, OFDM_symbol);
 		LENGTH = OFDM_symbol * 3 - 3;

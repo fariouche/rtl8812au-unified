@@ -803,8 +803,13 @@ odm_config_rf_with_tx_pwr_track_header_file(struct dm_struct *dm)
 
 #if RTL8195B_SUPPORT
 	if (dm->support_ic_type == ODM_RTL8195B) {
-		READ_AND_CONFIG_MP(8195b, _txpowertrack);
-		READ_AND_CONFIG_MP(8195b, _txxtaltrack);
+		if (dm->package_type == 1) {
+			READ_AND_CONFIG_MP(8195b, _txpowertrack_pkg1);
+			READ_AND_CONFIG_MP(8195b, _txxtaltrack_pkg1);
+		} else {
+			READ_AND_CONFIG_MP(8195b, _txpowertrack);
+			READ_AND_CONFIG_MP(8195b, _txxtaltrack);
+		}
 	}
 #endif
 
@@ -827,6 +832,8 @@ odm_config_rf_with_tx_pwr_track_header_file(struct dm_struct *dm)
 			READ_AND_CONFIG_MP(8812f, _txpowertrack_type2);
 		else if (dm->rfe_type == 3)
 			READ_AND_CONFIG_MP(8812f, _txpowertrack_type3);
+		else if (dm->rfe_type == 4)
+			READ_AND_CONFIG_MP(8812f, _txpowertrack_type4);
 		else
 			READ_AND_CONFIG_MP(8812f, _txpowertrack);
 	}

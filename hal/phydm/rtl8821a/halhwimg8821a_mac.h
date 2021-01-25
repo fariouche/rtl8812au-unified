@@ -24,9 +24,8 @@
 ******************************************************************************/
 
 void
-odm_read_and_config_mp_8821a_mac_reg(/* TC: Test Chip, MP: MP Chip*/
-	struct dm_struct  *dm
-);
+odm_read_and_config_mp_8821a_mac_reg( /* TC: Test Chip, MP: MP Chip*/
+				     struct dm_struct *dm);
 u32 odm_get_version_mp_8821a_mac_reg(void);
 
 #endif

@@ -878,7 +878,8 @@ u32	rtw_build_vht_cap_ie(_adapter *padapter, u8 *pbuf)
 		/* IOT action suggested by Yu Chen 2017/3/3 */
 #ifdef CONFIG_80211AC_VHT
 		if ((pmlmeinfo->assoc_AP_vendor == HT_IOT_PEER_BROADCOM) &&
-			!pvhtpriv->ap_is_mu_bfer)
+			!pvhtpriv->ap_bf_cap.is_mu_bfer &&
+			pvhtpriv->ap_bf_cap.su_sound_dim == 2)
 			rf_num = (rf_num >= 2 ? 2 : rf_num);
 #endif
 		/* B13 14 15 Compressed Steering Number of Beamformer Antennas Supported */

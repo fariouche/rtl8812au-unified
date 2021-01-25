@@ -132,7 +132,7 @@ int usbctrl_vendorreq(struct intf_hdl *pintfhdl, u8 request, u16 value, u16 inde
 					RTW_INFO("reg 0x%x, usb %s %u fail, status:%d, vendorreq_times:%d\n"
 						, value, (requesttype == 0x01) ? "read" : "write" , len, status, vendorreq_times);
 				break;
-				
+
 			}
 
 			if (status < 0) {
@@ -647,6 +647,12 @@ u32 usb_write_port(struct intf_hdl *pintfhdl, u32 addr, u32 cnt, u8 *wmem)
 	purb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
 	purb->transfer_flags |= URB_ZERO_PACKET;
 #endif /* CONFIG_USE_USB_BUFFER_ALLOC_TX */
+
+#ifdef USB_PACKET_OFFSET_SZ
+#if (USB_PACKET_OFFSET_SZ == 0)
+	purb->transfer_flags |= URB_ZERO_PACKET;
+#endif
+#endif
 
 #if 0
 	if (bwritezero)

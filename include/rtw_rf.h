@@ -51,6 +51,7 @@ u8 center_chs_5g_num(u8 bw);
 u8 center_chs_5g(u8 bw, u8 id);
 
 u8 rtw_get_scch_by_cch_offset(u8 cch, u8 bw, u8 offset);
+u8 rtw_get_scch_by_cch_opch(u8 cch, u8 bw, u8 opch);
 
 u8 rtw_get_op_chs_by_cch_bw(u8 cch, u8 bw, u8 **op_chs, u8 *op_ch_num);
 
@@ -91,8 +92,7 @@ enum	_REG_PREAMBLE_MODE {
 typedef enum _BAND_TYPE {
 	BAND_ON_2_4G = 0,
 	BAND_ON_5G = 1,
-	BAND_ON_BOTH = 2,
-	BAND_MAX = 3,
+	BAND_MAX,
 } BAND_TYPE, *PBAND_TYPE;
 
 #ifdef CONFIG_NARROWBAND_SUPPORTING
@@ -163,6 +163,7 @@ void rf_type_to_default_trx_bmp(enum rf_type rf, enum bb_path *tx, enum bb_path 
 enum rf_type trx_num_to_rf_type(u8 tx_num, u8 rx_num);
 enum rf_type trx_bmp_to_rf_type(u8 tx_bmp, u8 rx_bmp);
 bool rf_type_is_a_in_b(enum rf_type a, enum rf_type b);
+u8 rtw_restrict_trx_path_bmp_by_trx_num_lmt(u8 trx_path_bmp, u8 tx_num_lmt, u8 rx_num_lmt, u8 *tx_num, u8 *rx_num);
 u8 rtw_restrict_trx_path_bmp_by_rftype(u8 trx_path_bmp, enum rf_type type, u8 *tx_num, u8 *rx_num);
 void tx_path_nss_set_default(enum bb_path txpath_nss[], u8 txpath_num_nss[], u8 txpath);
 void tx_path_nss_set_full_tx(enum bb_path txpath_nss[], u8 txpath_num_nss[], u8 txpath);
@@ -188,6 +189,14 @@ typedef enum _REGULATION_TXPWR_LMT {
 
 extern const char *const _regd_str[];
 #define regd_str(regd) (((regd) > TXPWR_LMT_WW) ? _regd_str[TXPWR_LMT_WW] : _regd_str[(regd)])
+
+void txpwr_idx_get_dbm_str(s8 idx, u8 txgi_max, u8 txgi_pdbm, SIZE_T cwidth, char dbm_str[], u8 dbm_str_len);
+
+#define MBM_PDBM 100
+#define UNSPECIFIED_MBM 32767 /* maximum of s16 */
+
+void txpwr_mbm_get_dbm_str(s16 mbm, SIZE_T cwidth, char dbm_str[], u8 dbm_str_len);
+s16 mb_of_ntx(u8 ntx);
 
 #if CONFIG_TXPWR_LIMIT
 struct regd_exc_ent {
@@ -215,7 +224,7 @@ void rtw_txpwr_lmt_list_free(struct rf_ctl_t *rfctl);
 #endif /* CONFIG_TXPWR_LIMIT */
 
 #define BB_GAIN_2G 0
-#ifdef CONFIG_IEEE80211_BAND_5GHZ
+#if CONFIG_IEEE80211_BAND_5GHZ
 #define BB_GAIN_5GLB1 1
 #define BB_GAIN_5GLB2 2
 #define BB_GAIN_5GMB1 3
@@ -223,7 +232,7 @@ void rtw_txpwr_lmt_list_free(struct rf_ctl_t *rfctl);
 #define BB_GAIN_5GHB 5
 #endif
 
-#ifdef CONFIG_IEEE80211_BAND_5GHZ
+#if CONFIG_IEEE80211_BAND_5GHZ
 #define BB_GAIN_NUM 6
 #else
 #define BB_GAIN_NUM 1

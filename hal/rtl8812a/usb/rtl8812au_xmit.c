@@ -88,7 +88,7 @@ static s32 update_txdesc(struct xmit_frame *pxmitframe, u8 *pmem, s32 sz , u8 ba
 		offset += EARLY_MODE_INFO_SIZE ;/* 0x28			 */
 	}
 #endif
-	/* RTW_INFO("%s==>offset(0x%02x)\n",__FUNCTION__,offset); */
+	RTW_INFO("%s==>offset(0x%02x)\n",__FUNCTION__,offset);
 	SET_TX_DESC_OFFSET_8812(ptxdesc, offset);
 
 	if (bmcst)
@@ -103,7 +103,7 @@ static s32 update_txdesc(struct xmit_frame *pxmitframe, u8 *pmem, s32 sz , u8 ba
 	}
 #endif
 
-	/* RTW_INFO("%s, pkt_offset=0x%02x\n",__FUNCTION__,pxmitframe->pkt_offset); */
+	RTW_INFO("%s, pkt_offset=0x%02x\n",__FUNCTION__,pxmitframe->pkt_offset);
 	/* pkt_offset, unit:8 bytes padding */
 	if (pxmitframe->pkt_offset > 0)
 		SET_TX_DESC_PKT_OFFSET_8812(ptxdesc, pxmitframe->pkt_offset);
@@ -114,25 +114,23 @@ static s32 update_txdesc(struct xmit_frame *pxmitframe, u8 *pmem, s32 sz , u8 ba
 	SET_TX_DESC_QUEUE_SEL_8812(ptxdesc,  pattrib->qsel);
 
 	/* offset 12 */
-
 	if (!pattrib->qos_en) {
 		SET_TX_DESC_HWSEQ_EN_8812(ptxdesc, 1); /* Hw set sequence number */
 	} else
 		SET_TX_DESC_SEQ_8812(ptxdesc, pattrib->seqnum);
-
 	if ((pxmitframe->frame_tag & 0x0f) == DATA_FRAMETAG) {
-		/* RTW_INFO("pxmitframe->frame_tag == DATA_FRAMETAG\n");		 */
+		RTW_INFO("pxmitframe->frame_tag == DATA_FRAMETAG\n");
 
 		rtl8812a_fill_txdesc_sectype(pattrib, ptxdesc);
 #if defined(CONFIG_CONCURRENT_MODE)
 		if (bmcst)
-			rtl8812a_fill_txdesc_force_bmc_camid(pattrib, ptxdesc);
+			fill_txdesc_force_bmc_camid(pattrib, ptxdesc);
 #endif
 
 		/* offset 20 */
 #ifdef CONFIG_USB_TX_AGGREGATION
 		if (pxmitframe->agg_num > 1) {
-			/* RTW_INFO("%s agg_num:%d\n",__FUNCTION__,pxmitframe->agg_num ); */
+			RTW_INFO("%s agg_num:%d\n",__FUNCTION__,pxmitframe->agg_num );
 			SET_TX_DESC_USB_TXAGG_NUM_8812(ptxdesc, pxmitframe->agg_num);
 		}
 #endif
@@ -214,7 +212,7 @@ static s32 update_txdesc(struct xmit_frame *pxmitframe, u8 *pmem, s32 sz , u8 ba
 				SET_TX_DESC_TX_RATE_8812(ptxdesc, (pHalData->INIDATA_RATE[pattrib->mac_id] & 0x7F));
 			}
 			if (bmcst)
-				rtl8812a_fill_txdesc_bmc_tx_rate(pattrib, ptxdesc);
+				fill_txdesc_bmc_tx_rate(pattrib, ptxdesc);
 
 			if (padapter->fix_rate != 0xFF) { /* modify data rate by iwpriv */
 				SET_TX_DESC_USE_RATE_8812(ptxdesc, 1);
@@ -430,7 +428,7 @@ u32 upload_txpktbuf_8812au(_adapter *adapter, u8 *buf, u32 buflen)
 		}
 		rtw_write32(adapter, REG_PKTBUF_DBG_CTRL, 0xff800000+(beacon_head<<6) + qw_addr);
 		loop_cnt = 0;
-		while ((rtw_read32(adapter, REG_PKTBUF_DBG_CTRL) & BIT23) == false) {
+		while ((rtw_read32(adapter, REG_PKTBUF_DBG_CTRL) & BIT23) != _FALSE) {
 			rtw_udelay_os(10);
 			if (loop_cnt++ == 100)
 				return _FALSE;
@@ -463,7 +461,7 @@ static s32 rtw_dump_xframe(_adapter *padapter, struct xmit_frame *pxmitframe)
 	    (pxmitframe->attrib.ether_type != 0x888e) &&
 	    (pxmitframe->attrib.ether_type != 0x88b4) &&
 	    (pxmitframe->attrib.dhcp_pkt != 1))
-		rtw_issue_addbareq_cmd(padapter, pxmitframe);
+		rtw_issue_addbareq_cmd(padapter, pxmitframe, _FALSE);
 #endif /* CONFIG_80211N_HT */
 	mem_addr = pxmitframe->buf_addr;
 
@@ -802,7 +800,7 @@ agg_end:
 	    (pfirstframe->attrib.ether_type != 0x888e) &&
 	    (pfirstframe->attrib.ether_type != 0x88b4) &&
 	    (pfirstframe->attrib.dhcp_pkt != 1))
-		rtw_issue_addbareq_cmd(padapter, pfirstframe);
+		rtw_issue_addbareq_cmd(padapter, pfirstframe, _FALSE);
 #endif /* CONFIG_80211N_HT */
 #ifndef CONFIG_USE_USB_BUFFER_ALLOC_TX
 	/* 3 3. update first frame txdesc */
@@ -1128,7 +1126,7 @@ s32 rtl8812au_hostap_mgnt_xmit_entry(_adapter *padapter, _pkt *pkt)
 	pxmitbuf = pxmitbuf + TXDESC_SIZE;
 	_rtw_memcpy(pxmitbuf, skb->data, len);
 
-	/* RTW_INFO("mgnt_xmit, len=%x\n", pxmit_skb->len); */
+	RTW_INFO("mgnt_xmit, len=%x\n", pxmit_skb->len);
 
 
 	/* ----- prepare urb for submit ----- */
@@ -1138,7 +1136,7 @@ s32 rtl8812au_hostap_mgnt_xmit_entry(_adapter *padapter, _pkt *pkt)
 	pipe = usb_sndbulkpipe(pdvobj->pusbdev, pHalData->Queue2EPNum[(u8)MGT_QUEUE_INX] & 0x0f);
 
 	usb_fill_bulk_urb(urb, pdvobj->pusbdev, pipe,
-		pxmit_skb->data, pxmit_skb->len, rtl8192cu_hostap_mgnt_xmit_cb, pxmit_skb);
+		pxmit_skb->data, pxmit_skb->len, rtl8812au_hostap_mgnt_xmit_cb, pxmit_skb);
 
 	urb->transfer_flags |= URB_ZERO_PACKET;
 	usb_anchor_urb(urb, &phostapdpriv->anchored);

@@ -54,14 +54,18 @@ check_positive(
 			 (dm->type_apa & 0xFF00)  << 16;
 
 	PHYDM_DBG(dm, ODM_COMP_INIT,
-		"===> check_positive (cond1, cond2, cond3, cond4) = (0x%X 0x%X 0x%X 0x%X)\n", cond1, cond2, cond3, cond4);
+		  "===> %s (cond1, cond2, cond3, cond4) = (0x%X 0x%X 0x%X 0x%X)\n",
+		  __func__, cond1, cond2, cond3, cond4);
 	PHYDM_DBG(dm, ODM_COMP_INIT,
-		"===> check_positive (driver1, driver2, driver3, driver4) = (0x%X 0x%X 0x%X 0x%X)\n", driver1, driver2, driver3, driver4);
+		  "===> %s (driver1, driver2, driver3, driver4) = (0x%X 0x%X 0x%X 0x%X)\n",
+		  __func__, driver1, driver2, driver3, driver4);
 
 	PHYDM_DBG(dm, ODM_COMP_INIT,
-		"	(Platform, Interface) = (0x%X, 0x%X)\n", dm->support_platform, dm->support_interface);
+		  "	(Platform, Interface) = (0x%X, 0x%X)\n",
+		  dm->support_platform, dm->support_interface);
 	PHYDM_DBG(dm, ODM_COMP_INIT,
-		"	(Board, Package) = (0x%X, 0x%X)\n", dm->board_type, dm->package_type);
+		  "	(Board, Package) = (0x%X, 0x%X)\n", dm->board_type,
+		  dm->package_type);
 
 
 	/*============== value Defined Check ===============*/
@@ -100,18 +104,6 @@ check_positive(
 	} else
 		return false;
 }
-
-/*
-static boolean
-check_negative(
-	struct dm_struct     *dm,
-	const u32  condition1,
-	const u32  condition2
-)
-{
-	return true;
-}
-*/
 
 /******************************************************************************
 *                           MAC_REG.TXT
@@ -220,9 +212,7 @@ u32 array_mp_8821a_mac_reg[] = {
 };
 
 void
-odm_read_and_config_mp_8821a_mac_reg(
-	struct dm_struct  *dm
-)
+odm_read_and_config_mp_8821a_mac_reg(struct dm_struct *dm)
 {
 	u32     i         = 0;
 	u8     c_cond;
@@ -232,7 +222,7 @@ odm_read_and_config_mp_8821a_mac_reg(
 
 	u32	v1 = 0, v2 = 0, pre_v1 = 0, pre_v2 = 0;
 
-	PHYDM_DBG(dm, ODM_COMP_INIT, "===> odm_read_and_config_mp_8821a_mac_reg\n");
+	PHYDM_DBG(dm, ODM_COMP_INIT, "===> %s\n", __func__);
 
 	while ((i + 1) < array_len) {
 		v1 = array[i];

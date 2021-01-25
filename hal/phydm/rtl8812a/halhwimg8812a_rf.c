@@ -111,18 +111,6 @@ check_positive(
 		return false;
 }
 
-/*
-static boolean
-check_negative(
-	struct dm_struct *dm,
-	const u32	condition1,
-	const u32	condition2
-)
-{
-	return true;
-}
-*/
-
 /******************************************************************************
 *                           radioa.TXT
 ******************************************************************************/
